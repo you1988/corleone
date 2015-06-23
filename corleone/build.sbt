@@ -36,3 +36,19 @@ resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 // Play provides two styles of routers, one expects its actions to be injected, the
 // other, legacy style, accesses its actions statically.
 routesGenerator := InjectedRoutesGenerator
+
+
+// Docker related configuration
+// see http://www.scala-sbt.org/sbt-native-packager/formats/docker.html
+maintainer := "Team WHIP <team-whip@zalando.de>"
+
+// use the Zalando base image
+// see https://registry.hub.docker.com/u/zalando/openjdk/tags/manage/
+dockerBaseImage := "zalando/openjdk:8u40-b09-4"
+
+// exposing the play ports
+dockerExposedPorts := Seq(9000, 9443)
+
+// define Zalando docker registry
+dockerRepository := Some("https://pierone.stups.zalan.do/whip")
+
