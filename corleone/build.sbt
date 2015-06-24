@@ -38,6 +38,16 @@ resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 routesGenerator := InjectedRoutesGenerator
 
 
+
+// generate scm-source.json
+val process = Process("scripts/generate_scm_source.sh")
+val exitCode = process !
+
+// add scm-source.json 
+mappings in Universal ++=
+  (baseDirectory.value / "."  * "scm-source.json" get) map (x => x -> ("scm-source.json"))
+
+
 // Docker related configuration
 // see http://www.scala-sbt.org/sbt-native-packager/formats/docker.html
 maintainer := "Team WHIP <team-whip@zalando.de>"
@@ -52,3 +62,25 @@ dockerExposedPorts := Seq(9000, 9443)
 // define Zalando docker registry
 dockerRepository := Some("https://pierone.stups.zalan.do/whip")
 
+
+import com.typesafe.sbt.packager.docker._
+
+dockerCommands := dockerCommands.value.filterNot {
+  // ExecCmd is a case class, and args is a varargs variable, so you need to bind it with @
+  // we need to remove them here because they are not placed at the end of the Dockerfile otherwise
+  case ExecCmd("ENTRYPOINT", args @ _*) => true
+  case ExecCmd("CMD", args @ _*) => true
+
+  // dont filter the rest
+  case cmd  => false
+}
+
+// directory must be accessible for non-root users
+dockerCommands += Cmd("RUN", "chmod -R a+rwx /opt/docker")
+
+// scm-source.json has to be placed in the root dircectory of a Docker image
+dockerCommands += Cmd("ADD", "/opt/docker/scm-source.json / ")
+
+// application execution
+dockerCommands += Cmd("ENTRYPOINT", "bin/corleone")
+dockerCommands += Cmd("CMD", "")
