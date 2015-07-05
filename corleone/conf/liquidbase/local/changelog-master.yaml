@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - preConditions:
+    - runningAs:
+        username: translation_service
+
+  - changeSet:
+      id: 1
+      author: mblascoespar
+      changes:
+        - createTable:
+            schemaName: ts_data
+            tableName: person
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: firstname
+                  type: varchar(50)
+              - column:
+                  name: lastname
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: state
+                  type: char(2)
