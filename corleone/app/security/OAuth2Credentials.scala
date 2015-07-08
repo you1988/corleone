@@ -13,7 +13,17 @@ import play.api.libs.concurrent.Execution.Implicits._
  * DO NOT CACHE!!!
  *
  */
-class OAuth2Credentials(application: Application) {
+
+
+object OAuth2Credentials {
+  
+  // TODO caching?
+  def get(application: Application): OAuth2Credentials  = {
+    return new OAuth2Credentials(application)
+  }
+}
+
+class OAuth2Credentials private (application: Application) {
   
   // TODO error handling
   private val credentialsFilePath = application.configuration.getString("oauth2.credentials.filePath").get
