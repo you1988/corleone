@@ -2,7 +2,7 @@
 it gives you translations… and maybe someday you have opportunity to repay us the favour, capisce?
 
 
-# Security
+## Security
 Corleone provides a basic implementation of the OAUTH2 [Authorization Code Grant flow]( http://tools.ietf.org/html/rfc6749#section-4.1.3).
 
 The mechanism can be easily enabled / disabled with 
