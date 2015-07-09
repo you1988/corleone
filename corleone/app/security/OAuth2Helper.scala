@@ -75,7 +75,11 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
     val oauthCredentials = credentialsProvider.get
     val state = UUID.randomUUID().toString
     val clientId = oauthCredentials.clientId
-    val redirectUrl = OAuth2Constants.authorizationUrl.format(clientId, OAuth2Constants.callbackUrl, state)
+    
+    val redirectToAuthTemplate = OAuth2Constants.authorizationUrl + 
+                                            "?client_id=%s&redirect_uri=%s&state=%s&realm=employees&response_type=code"
+    
+    val redirectUrl = redirectToAuthTemplate.format(clientId, OAuth2Constants.callbackUrl, state)
 
     Logger.debug(s"redirecting user to [redirectUrl=$redirectUrl]")
     Results.Redirect(redirectUrl).withSession((OAuth2Constants.SESSION_KEY_STATE, state),
