@@ -2,11 +2,12 @@ package controllers
 
 import java.util.{Date, UUID}
 
+import com.google.inject.Inject
 import play.api._
 import play.api.http.Status
 import play.api.libs.ws.{WSAuthScheme, WS}
 import play.api.mvc._
-import security.{OAuth2Helper, OAuth2Credentials}
+import security.{OAuth2CredentialsProvider, OAuth2Helper, OAuth2Constants, OAuth2Credentials}
 
 import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
@@ -17,7 +18,7 @@ import play.api.Play.current
  * This controller provides a callback endpoint for handling the flow as described in 
  * http://tools.ietf.org/html/rfc6749#section-4.1.3
  */
-class OAuth2Controller extends Controller {
+class OAuth2Controller @Inject() (oauth2: OAuth2Helper, credentialsProvider: OAuth2CredentialsProvider) extends Controller {
 
   /**
    * This callback is usually called by the authorization server when the user has authenticated successfully
@@ -36,8 +37,33 @@ class OAuth2Controller extends Controller {
   // Hack in order to allow return of result instances. Otherwise, Scala can not derive the return type leading to a
   // compilation error
   def handleCallback(request: Request[AnyContent]): Result = {
+
+    val originalRequest = request.session.get(OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL).get
+    
+    // check if Authorization server reported an error
+    val possibleErrorOption = request.getQueryString("error")
+    if (! possibleErrorOption.isEmpty) {
+      val error = possibleErrorOption.get
+      val errorDescription = request.getQueryString("error_description").get
+      
+      val isRetryAfterAuthError = ! request.session.get("oauth2_retry_after_auth_error").isEmpty
+      return if (isRetryAfterAuthError){
+        handleError(s"authorization server reported error via callback: [error=$error, errorDescription=$errorDescription]",
+                    INTERNAL_SERVER_ERROR)
+      }
+      else {
+        Logger.warn(s"authorization server reported error via callback: [error=$error, errorDescription=$errorDescription]" +
+                      "-> retrying again while invalidating credentials cache and letting the user authenticate again")
+        credentialsProvider.invalidateCache()
+        Redirect(originalRequest).withNewSession.withSession(("oauth2_retry_after_auth_error", "true"))
+      }
+    }
+    
+    
+    
+    
     val stateReceivedByCallbackOption = request.getQueryString("state")
-    val stateInSessionOption = request.session.get(OAuth2Helper.SESSION_KEY_STATE)
+    val stateInSessionOption = request.session.get(OAuth2Constants.SESSION_KEY_STATE)
 
     if (stateReceivedByCallbackOption.isEmpty )
       return handleError("Did not receive any OAUTH2 state from callback", BAD_REQUEST)
@@ -58,11 +84,10 @@ class OAuth2Controller extends Controller {
       if(codeReceivedByCallbackOption.isEmpty) return handleError("Did not receive OAUTH2 code from callback", BAD_REQUEST)
     
     
-      val response = OAuth2Helper.requestAccessToken(codeReceivedByCallbackOption.get)
+      // finally, request access token with the code delivered via the callback performed by the authorization server
+      val response = oauth2.requestAccessToken(codeReceivedByCallbackOption.get)
       if (response.status == OK) {
         val json = response.json
-        
-        val originalRequest = request.session.get(OAuth2Helper.SESSION_KEY_ORIGINAL_REQUEST_URL).get
         val accessTokenOption = (json \ "access_token").asOpt[String]
         
         if (accessTokenOption.isEmpty)
@@ -76,18 +101,15 @@ class OAuth2Controller extends Controller {
 
           Redirect(originalRequest)
             .withNewSession
-            .withSession( (OAuth2Helper.SESSION_KEY_ACCESS_TOKEN, accessToken))
+            .withSession( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, accessToken))
         }
         else {
           val refreshToken = refreshTokenOption.get
           Redirect(originalRequest)
             .withNewSession
-            .withSession( (OAuth2Helper.SESSION_KEY_ACCESS_TOKEN, accessToken),
-                          (OAuth2Helper.SESSION_KEY_REFRESH_TOKEN, refreshToken) )
+            .withSession( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, accessToken),
+                          (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken) )
         }
-    
-    
-
       }
       else {
         val error = response.body
@@ -100,13 +122,13 @@ class OAuth2Controller extends Controller {
     Logger.warn(message)
     
     if(errorStatus == BAD_REQUEST) {
-      return BadRequest(message)
+      return BadRequest(message).withNewSession
     }
     else if (errorStatus == CONFLICT) {
-      return Conflict(message)
+      return Conflict(message).withNewSession
     }
     
-    InternalServerError(message)
+    InternalServerError(message).withNewSession
   }
   
 }
