@@ -15,32 +15,35 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object OAuth2Helper {
   
-  // TODO error handling
-  val accessTokenUrl = Play.current.configuration.getString("oauth2.access.token.url").get
-  val tokenInfoUrl = Play.current.configuration.getString("oauth2.token.info.url").get
-  val callbackUrl = Play.current.configuration.getString("oauth2.callback.url").get
-  val authorizationUrl = Play.current.configuration.getString("oauth2.authorization.url").get
-
+  private val configuration = Play.current.configuration
   
-  val REQUEST_TIMEOUT = 5000L
+  val accessTokenUrl = configuration.getString("oauth2.access.token.url").get
+  val tokenInfoUrl = configuration.getString("oauth2.token.info.url").get
+  val callbackUrl = configuration.getString("oauth2.callback.url").get
+  val authorizationUrl = configuration.getString("oauth2.authorization.url").get
+  val requestTimeout =configuration.getLong("oauth2.request.timeout").get
+  val expiryTimeLimitForTokenRefreshInSeconds = configuration.getInt("oauth2.token.refresh.expiry.limit").get
+  val isOAuth2Enabled = configuration.getBoolean("oauth2.enabled").get
+  
+  
+  val SESSION_KEY_ACCESS_TOKEN = "oauth2_access_token"
+  val SESSION_KEY_REFRESH_TOKEN = "oauth2_refresh_token"
+  val SESSION_KEY_STATE = "oauth2_state"
+  val SESSION_KEY_ORIGINAL_REQUEST_URL = "oauth2_original_request_url"
   
   
   def requestAccessToken(oauth2Code: String): WSResponse = {
     val credentials = OAuth2Credentials.get(Play.current)
-    val redirectUri = Play.current.configuration.getString("oauth2.callback.url").get // TODO error handling
-    val payload = s"grant_type=authorization_code&code=$oauth2Code&realm=employees&redirect_uri=$redirectUri"
-
-
+    val payload = s"grant_type=authorization_code&code=$oauth2Code&realm=employees&redirect_uri=$callbackUrl"
+    
     val futureResponse = WS.url(accessTokenUrl)
       .withHeaders(("Content-Type","application/x-www-form-urlencoded"))
       .withAuth(credentials.clientId, credentials.clientSecret, WSAuthScheme.BASIC)
-      .withRequestTimeout(REQUEST_TIMEOUT) // TODO mak configurable
+      .withRequestTimeout(requestTimeout)
       .post(payload)
-
-    // TODO error handling
+    
     Await.result(futureResponse, Duration(5L, SECONDS))
   }
-  
   
   
   def refreshAccessToken(refreshToken: String): WSResponse = {
@@ -51,7 +54,7 @@ object OAuth2Helper {
     val futureResponse = WS.url(accessTokenUrl)
       .withHeaders(("Content-Type","application/x-www-form-urlencoded"))
       .withAuth(credentials.clientId, credentials.clientSecret, WSAuthScheme.BASIC)
-      .withRequestTimeout(REQUEST_TIMEOUT) // TODO mak configurable
+      .withRequestTimeout(requestTimeout)
       .post(payload)
 
     Await.result(futureResponse, Duration(5L, SECONDS))
@@ -74,6 +77,7 @@ object OAuth2Helper {
     val redirectUrl = authorizationUrl.format(clientId, callbackUrl, state)
     
     Logger.debug(s"redirecting user to [redirectUrl=$redirectUrl]")
-    Results.Redirect(redirectUrl).withSession(("oauth2_state",state), ("oauth2_original_request_url", originalRequestUrl))
+    Results.Redirect(redirectUrl).withSession(("oauth2_state",state), 
+                                              ("oauth2_original_request_url", originalRequestUrl))
   }
 }

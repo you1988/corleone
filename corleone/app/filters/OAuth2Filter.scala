@@ -17,19 +17,32 @@ class OAuth2Filter extends Filter
 {
   val NO_TOKEN :String = "NO_TOKEN"
   val EXCLUDED_REQUEST_PATHS: Set[String] = Set("/oauth_callback", " /heartbeat")
-  val EXPIRY_TIME_LIMIT_FOR_REFRESH_IN_S = 300 // trigger access token refresh, if access token expires in 5 minutes
+  val customExcludedRequestPaths = {
+     val excludedPathsList = Play.current.configuration.getStringList("oauth2.excluded.paths").get
+    
+    // unfortunately, excludedPathsList has type java.util.List
+    val entrySetBuilder = collection.mutable.Set.newBuilder[String]
+    val iterator = excludedPathsList.iterator()
+    while(iterator.hasNext) entrySetBuilder += iterator.next()
+    
+    entrySetBuilder.result()
+  }
+  
   
   
   override def apply(nextFilter: RequestHeader => Future[Result]) 
                     (requestHeader: RequestHeader): Future[Result] = {
     
-    Logger.debug("Entered OAuth2Filter for path " + requestHeader.path)
+    if(! OAuth2Helper.isOAuth2Enabled) return nextFilter.apply(requestHeader)
+
+    if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2Filter for path " + requestHeader.path)
 
     
-    // go on with following filter actions, if path is excluded from OAUTH2 security check
+    // go on with following filter actions, if path is not excluded from OAUTH2 security check
     if(EXCLUDED_REQUEST_PATHS.contains(requestHeader.path)) return nextFilter.apply(requestHeader)
-
-    Logger.debug("OAuth2Filter is executed for path " + requestHeader.path)
+    if(! customExcludedRequestPaths.find(entry => requestHeader.path.startsWith(entry)).isEmpty) return nextFilter.apply(requestHeader)
+    
+    if (Logger.isDebugEnabled) Logger.debug("OAuth2Filter is executed for path " + requestHeader.path)
     
     val accessTokenOption = requestHeader.session.get("oauth2_access_token")
     val accessToken = accessTokenOption.getOrElse(NO_TOKEN)
@@ -48,7 +61,7 @@ class OAuth2Filter extends Filter
 
           Logger.debug("access token IS almost expired -> trying to refresh access token")
           
-          val refreshTokenOption = requestHeader.session.get("oauth2_refresh_token")
+          val refreshTokenOption = requestHeader.session.get(OAuth2Helper.SESSION_KEY_REFRESH_TOKEN)
 
           if ( refreshTokenOption.isEmpty ) {
             Logger.warn("could not find refresh token in current session -> redirecting user to authorization server")
@@ -74,8 +87,8 @@ class OAuth2Filter extends Filter
               // new one for the next refresh
               return nextFilter(requestHeader).map{ result =>
                 if(newRefreshToken.isEmpty) result.withSession(("oauth2_access_token", newAccessToken))
-                else result.withSession(("oauth2_access_token", newAccessToken), 
-                                        ("oauth2_refresh_token", newRefreshToken.get))
+                else result.withSession((OAuth2Helper.SESSION_KEY_ACCESS_TOKEN, newAccessToken), 
+                                        (OAuth2Helper.SESSION_KEY_REFRESH_TOKEN, newRefreshToken.get))
               }
           }
           else {
@@ -116,10 +129,15 @@ class OAuth2Filter extends Filter
   
   
   def isAccessTokenAlmostExpired(tokenInfoResponse: WSResponse): Boolean = {
-    // TODO error handling
-    val tokenExpiryTimeInSeconds= (tokenInfoResponse.json \ "expires_in").asOpt[Int].get
-    Logger.debug(s"token expires in $tokenExpiryTimeInSeconds seconds")
-    return tokenExpiryTimeInSeconds <= EXPIRY_TIME_LIMIT_FOR_REFRESH_IN_S
+    val tokenExpiryTimeInSecondsOption = (tokenInfoResponse.json \ "expires_in").asOpt[Int]
+
+    tokenExpiryTimeInSecondsOption match {
+      case Some(expiryTime) => expiryTime <= OAuth2Helper.expiryTimeLimitForTokenRefreshInSeconds
+      case _ => {
+        Logger.warn("Did not receive token expiry time from token info request -> access token is considered as expired")
+        false
+      }
+    }
   }
 }
 

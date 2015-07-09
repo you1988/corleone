@@ -29,54 +29,84 @@ class OAuth2Controller extends Controller {
    * where the access token is validated for each request.
    */
   def callback = Action{ request =>
-   handleCallback(request)
+    handleCallback(request)
   }
  
   
-  // weird hack in order to allow return of result instances
+  // Hack in order to allow return of result instances. Otherwise, Scala can not derive the return type leading to a
+  // compilation error
   def handleCallback(request: Request[AnyContent]): Result = {
     val stateReceivedByCallbackOption = request.getQueryString("state")
-    val stateInSessionOption = request.session.get("oauth2_state")
+    val stateInSessionOption = request.session.get(OAuth2Helper.SESSION_KEY_STATE)
 
     if (stateReceivedByCallbackOption.isEmpty )
-      BadRequest("Did not receive any OAUTH2 state from callback")
-    else if(stateInSessionOption.isEmpty)
-      BadRequest("Could not find OAUTH2 state from session")
-    else {
-      val stateReceivedByCallback = stateReceivedByCallbackOption.get
-      val stateInSession = stateInSessionOption.get
-
-      // check for possible CSRF attack
-      if (stateReceivedByCallback != stateInSession)
-        Conflict("OAUTH2 state in session does not match state received from callback")
-      else {
-        val codeReceivedByCallbackOption = request.getQueryString("code")
-        if(codeReceivedByCallbackOption.isEmpty) return BadRequest("Did not receive OAUTH2 code from callback")
-
-
-        val response = OAuth2Helper.requestAccessToken(codeReceivedByCallbackOption.get)
-        if (response.status == OK) {
-          val json = response.json
-          val accessToken = (json \ "access_token").asOpt[String].get // TODO error handling
-          val refreshToken = (json \ "refresh_token").asOpt[String].get // TODO error handling
-
-
-          val originalRequest = request.session.get("oauth2_original_request_url").get
+      return handleError("Did not receive any OAUTH2 state from callback", BAD_REQUEST)
+    
+    
+    if (stateInSessionOption.isEmpty)
+      return handleError("Could not find OAUTH2 state from session", BAD_REQUEST)
+    
+    
+    val stateReceivedByCallback = stateReceivedByCallbackOption.get
+    val stateInSession = stateInSessionOption.get
+    
+    // check for possible CSRF attack
+    if (stateReceivedByCallback != stateInSession)
+      handleError("OAUTH2 state in session does not match state received from callback", CONFLICT)
+    
+      val codeReceivedByCallbackOption = request.getQueryString("code")
+      if(codeReceivedByCallbackOption.isEmpty) return handleError("Did not receive OAUTH2 code from callback", BAD_REQUEST)
+    
+    
+      val response = OAuth2Helper.requestAccessToken(codeReceivedByCallbackOption.get)
+      if (response.status == OK) {
+        val json = response.json
+        
+        val originalRequest = request.session.get(OAuth2Helper.SESSION_KEY_ORIGINAL_REQUEST_URL).get
+        val accessTokenOption = (json \ "access_token").asOpt[String]
+        
+        if (accessTokenOption.isEmpty)
+          return handleError("Did not receive any access token from access token request", INTERNAL_SERVER_ERROR)
+        
+        val accessToken = accessTokenOption.get
+        
+        val refreshTokenOption = (json \ "refresh_token").asOpt[String]
+        if (refreshTokenOption.isEmpty) {
+          Logger.warn("Did not receive any refresh token from access token request response -> access token can not be refreshed")
 
           Redirect(originalRequest)
             .withNewSession
-            .withSession( ("oauth2_access_token", accessToken),
-              ("oauth2_refresh_token", refreshToken) )
+            .withSession( (OAuth2Helper.SESSION_KEY_ACCESS_TOKEN, accessToken))
         }
         else {
-          val error = response.body
-          InternalServerError(s"access token request was not successful: $error")
+          val refreshToken = refreshTokenOption.get
+          Redirect(originalRequest)
+            .withNewSession
+            .withSession( (OAuth2Helper.SESSION_KEY_ACCESS_TOKEN, accessToken),
+                          (OAuth2Helper.SESSION_KEY_REFRESH_TOKEN, refreshToken) )
         }
+    
+    
+
       }
-
-
-
-
-    }
+      else {
+        val error = response.body
+        InternalServerError(s"access token request was not successful: $error")
+      }
   }
+  
+  
+  private def handleError(message: String, errorStatus: Int): Result = {
+    Logger.warn(message)
+    
+    if(errorStatus == BAD_REQUEST) {
+      return BadRequest(message)
+    }
+    else if (errorStatus == CONFLICT) {
+      return Conflict(message)
+    }
+    
+    InternalServerError(message)
+  }
+  
 }
