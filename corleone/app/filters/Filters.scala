@@ -9,12 +9,12 @@ import play.filters.headers.SecurityHeadersFilter
 
 
 /**
- * see 
+ * See 
  * <ul>
  * <li>https://www.playframework.com/documentation/2.4.x/SecurityHeaders</li>
  * <li>https://www.playframework.com/documentation/2.4.x/GzipEncoding</li>
  * </ul>
  */
 class Filters @Inject() (oauth2Filter: OAuth2Filter, securityHeadersFilter: SecurityHeadersFilter, gzipFilter: GzipFilter) extends HttpFilters {
-  def filters = Seq(oauth2Filter, gzipFilter)//, securityHeadersFilter)
+  def filters = Seq(oauth2Filter, gzipFilter, securityHeadersFilter)
 }
