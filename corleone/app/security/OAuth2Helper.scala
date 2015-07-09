@@ -1,16 +1,28 @@
+/*
+ * Copyright [2015] Zalando SE
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package security
 
 import java.util.UUID
 
 import com.google.inject.Inject
-import controllers.Assets
 import play.api.mvc.Results
 import play.api.{Logger, Play}
 import play.api.libs.ws.{WSAuthScheme, WS, WSResponse}
 import play.mvc.Http.Status
 
 import scala.concurrent.{Future, Await}
-import scala.concurrent.duration._
 import scala.concurrent.duration._
 import play.api.Play.current
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,7 +45,7 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
     
     // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
     if(response.status != Status.OK && ! wasAlreadyCalledBefore) {
-      credentialsProvider.invalidateCache
+      credentialsProvider.invalidateCache()
       requestAccessToken(oauth2Code, true)
     } 
     else response
@@ -55,7 +67,7 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
 
     // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
     if(response.status != Status.OK && ! wasAlreadyCalledBefore) {
-      credentialsProvider.invalidateCache
+      credentialsProvider.invalidateCache()
       refreshAccessToken(refreshToken, true)
     }
     else response
