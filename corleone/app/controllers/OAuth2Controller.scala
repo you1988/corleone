@@ -96,6 +96,8 @@ class OAuth2Controller @Inject() (oauth2: OAuth2Helper, credentialsProvider: OAu
         val accessToken = accessTokenOption.get
         
         val refreshTokenOption = (json \ "refresh_token").asOpt[String]
+        
+        // redirect user back to his actual target URL together with the access token (and refresh token)
         if (refreshTokenOption.isEmpty) {
           Logger.warn("Did not receive any refresh token from access token request response -> access token can not be refreshed")
 

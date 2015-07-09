@@ -40,7 +40,7 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
   }
 
 
-  def refreshAccessToken(refreshToken: String, wasAlreadyCalledBefore: Boolean): WSResponse = {
+  def refreshAccessToken(refreshToken: String, wasAlreadyCalledBefore: Boolean = false): WSResponse = {
 
     val credentials = credentialsProvider.get
     val payload = s"grant_type=refresh_token&refresh_token=$refreshToken&realm=employees"

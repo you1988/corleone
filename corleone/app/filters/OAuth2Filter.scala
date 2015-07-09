@@ -30,7 +30,6 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
   }
   
   
-  
   override def apply(nextFilter: RequestHeader => Future[Result]) 
                     (requestHeader: RequestHeader): Future[Result] = {
     
