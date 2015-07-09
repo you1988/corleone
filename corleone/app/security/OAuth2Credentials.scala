@@ -13,17 +13,30 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.duration._
 
 /**
- * DO NOT CACHE!!!
- *
+ * Provides OAUTH2 credentials to its client.
+ * <b>DO NOT CACHE THE RETURNED CREDENTIALS!!!</b> The provider already takes for caching.
  */
-
-
 class OAuth2CredentialsProvider @Inject() (application: Application, cache: CacheApi) {
   
    private val CACHE_KEY = "oauth2.cache.credentials"
 
+  /**
+   * Provides access to the OAuth2 credentials stored in the file specified in 
+   * 'oauth2.credentials.filePath'.
+   * <b>DO NOT CACHE THE RETURNED CREDENTIALS!!!</b>. The reason is that they are rotated periodically 
+   * and the communication with stale credentials would fail. This method already takes care for 
+   * some caching. Other components of the OAUTH2 mechanism might invalidate this cache. 
+   * 
+   * @return OAUTH2 credentials
+   */
    def get: OAuth2Credentials = {
      
+      /*
+       * We try to reduce IO by avoiding reading the file for each single request. The OAuth2 mechanism is aware
+       * of this cache and invalidates it if it might be necessary (for example, if a request fails, it might be because
+       * of stale credentials).
+       */
+    
      val cachedCredentials = cache.get[OAuth2Credentials](CACHE_KEY)
      if(cachedCredentials.isEmpty) {
        val credentials = scala.io.Source.fromFile(OAuth2Constants.credentialsFilePath).mkString
@@ -45,6 +58,5 @@ class OAuth2CredentialsProvider @Inject() (application: Application, cache: Cach
     cache.remove(CACHE_KEY)
   }
 }
-
 
 class OAuth2Credentials(val clientId: String, val clientSecret: String)

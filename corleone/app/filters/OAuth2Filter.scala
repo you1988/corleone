@@ -14,6 +14,13 @@ import play.api.mvc._
 import scala.concurrent.duration._
 import play.api.http._
 
+
+/**
+ * The OAuth2Filter filters all requests for valid OAuth2 credentials, if the the filter is enabled and the requested 
+ * server path is not excluded from the check (to save performance for example). Note that the filter validates the
+ * access token against the token info endpoint for each (enabled) request. If the access token is almost expired,
+ * it tries to refresh this token.
+ */
 class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
 {
   val NO_TOKEN :String = "NO_TOKEN"
@@ -36,7 +43,6 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
     if(! OAuth2Constants.isOAuth2Enabled) return nextFilter.apply(requestHeader)
 
     if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2Filter for path " + requestHeader.path)
-
     
     // go on with following filter actions, if path is not excluded from OAUTH2 security check
     if(EXCLUDED_REQUEST_PATHS.contains(requestHeader.path)) return nextFilter.apply(requestHeader)
@@ -54,7 +60,7 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
     else {
       val tokenInfoResponse = oauth2.requestTokenInfo(accessToken)
       
-      if (isAccessTokenValid(tokenInfoResponse)){
+      if (isAccessGranted(tokenInfoResponse)){
         Logger.info("supplied access token IS valid")
 
         if(isAccessTokenAlmostExpired(tokenInfoResponse)) {
@@ -112,16 +118,15 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
   }
 
   
-  def isAccessTokenValid(response: WSResponse): Boolean = {
+  def isAccessGranted(response: WSResponse): Boolean = {
     // token is still valid. now. let's check if user has sufficient scopes 
     if (response.status == Status.OK){
       // at the moment, we can only check if the user is an employee. In the future, it will be possible to assign
       // more scopes to an user
-      
       val realmOption = (response.json \ "realm").asOpt[String]
       realmOption match {
         case Some(realm) => realm == "employees"
-        case _           => false  
+        case _           => false
       }
     }
     else false
