@@ -15,18 +15,12 @@
 
 package controllers
 
-import java.util.{Date, UUID}
+import javax.inject.Inject
 
-import com.google.inject.Inject
 import play.api._
-import play.api.http.Status
-import play.api.libs.ws.{WSAuthScheme, WS}
 import play.api.mvc._
-import security.{OAuth2CredentialsProvider, OAuth2Helper, OAuth2Constants, OAuth2Credentials}
+import security.{OAuth2CredentialsProvider, OAuth2Helper, OAuth2Constants}
 
-import scala.concurrent.{Future, Await}
-import scala.concurrent.duration._
-import play.api.Play.current
 
 
 /**

@@ -15,8 +15,8 @@
 package security
 
 import java.util.UUID
+import javax.inject.Inject
 
-import com.google.inject.Inject
 import play.api.mvc.Results
 import play.api.{Logger, Play}
 import play.api.libs.ws.{WSAuthScheme, WS, WSResponse}

@@ -15,18 +15,15 @@
 
 package filters
 
-import java.util.UUID
 
-import com.google.inject.Inject
+import javax.inject.Inject
+
 import play.api.{Logger,  Play}
-import security.{OAuth2Helper, OAuth2Constants, OAuth2Credentials}
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import security.{OAuth2Helper, OAuth2Constants}
+import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.ws.{WSResponse, WSAuthScheme, WS}
-import play.api._
+import play.api.libs.ws.WSResponse
 import play.api.mvc._
-import scala.concurrent.duration._
 import play.api.http._
 
 

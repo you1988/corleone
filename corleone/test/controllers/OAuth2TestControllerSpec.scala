@@ -166,9 +166,6 @@ class OAuth2TestControllerSpec extends PlaySpec with OAuth2TestCredentials with 
 }
 
 
-/**
- * Test of one specification with different route mock implementation
- */
 class OAuth2ControllerSpec2Test extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite{
 
   override def testPort = port
@@ -200,3 +197,35 @@ class OAuth2ControllerSpec2Test extends PlaySpec with OAuth2TestCredentials with
       }
     }
   }
+
+
+class OAuth2ControllerSpec3Test extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite {
+
+  override def testPort = port
+  implicit override lazy val app = fakeApp
+
+  override def routes = {
+    case ("POST", "/access_token") => Action {
+      Results.InternalServerError("does not work")
+    }
+  }
+
+
+  "OAUth2Controller" should {
+    "respond with InternalServerError, if communication to access token endpoint fails " in {
+      val Some(result) = route(
+        FakeRequest(
+          GET,
+          s"/oauth_callback?state=$OAUTH2_CALLBACK_STATE&code=$OAUTH2_CALLBACK_CODE",
+          FakeHeaders(),
+          AnyContentAsEmpty
+        )
+          .withSession((OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL, REDIRECT_URL),
+            (OAuth2Constants.SESSION_KEY_STATE, OAUTH2_CALLBACK_STATE))
+      )
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+      contentAsString(result) must include("access token request was not successful")
+    }
+  }
+}

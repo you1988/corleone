@@ -17,6 +17,7 @@ package controllers
 
 import play.api.mvc.{Action, Results, Handler}
 import play.api.test
+import play.api.test.Helpers
 
 import scala.reflect.io.File
 
@@ -27,14 +28,19 @@ trait OAuth2TestCredentials {
   val OAUTH2_CALLBACK_STATE = "anyState"
   val OAUTH2_CALLBACK_ERROR = "anyError"
   val OAUTH2_CALLBACK_ERROR_DESCRIPTION = "very bad problem"
+  val OAUTH2_CLIENT_ID = "my_client_id"
+  val OAUTH2_CLIENT_SECRET = "my_client_secret"
+
+
   val REDIRECT_URL = "https://localhost:9000"
   val ACCESS_TOKEN = "0989cd01-333d-4220-a699-539b452d019c"
   val REFRESH_TOKEN = "e8e099cf-2bc7-43c4-9e80-0c8ba66e4141"
+  
+  val credentialsFile = File("target/test.tmp").createFile().toAbsolute
 
-  val credentialsFile = File.makeTemp().toAbsolute
-  credentialsFile.writeAll("{\"client_id\":\"my_client_id\",\"client_secret\":\"my_client_secret\"}")
+  credentialsFile.writeAll("{\"client_id\":\"" + OAUTH2_CLIENT_ID + "\",\"client_secret\":\"" + OAUTH2_CLIENT_SECRET + "\"}")
 
-  def testPort:Int
+  def testPort:Int = Helpers.testServerPort
   def callbackUrl =  s"http://localhost:$testPort/oauth_callback"
   def accessTokenEndpoint = s"http://localhost:$testPort/access_token"
   def authorizationEndpoint = s"http://localhost:$testPort/z/oauth2/authorize"

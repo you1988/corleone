@@ -15,22 +15,17 @@
 
 package security
 
-import com.google.inject.Inject
+import javax.inject.{Inject, Singleton}
 import play.api.cache._
 import play.api.libs.json.Json
-import play.api.libs.ws.WS
-import play.api._
-import play.api.mvc._
 import play.api.Application
-
-import scala.concurrent.Future
-import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.duration._
 
 /**
  * Provides OAUTH2 credentials to its client.
  * <b>DO NOT CACHE THE RETURNED CREDENTIALS!!!</b> The provider already takes for caching.
  */
+@Singleton
 class OAuth2CredentialsProvider @Inject() (application: Application, cache: CacheApi) {
   
    private val CACHE_KEY = "oauth2.cache.credentials"
@@ -51,7 +46,6 @@ class OAuth2CredentialsProvider @Inject() (application: Application, cache: Cach
        * of this cache and invalidates it if it might be necessary (for example, if a request fails, it might be because
        * of stale credentials).
        */
-    
      val cachedCredentials = cache.get[OAuth2Credentials](CACHE_KEY)
      if(cachedCredentials.isEmpty) {
        val credentials = scala.io.Source.fromFile(OAuth2Constants.credentialsFilePath).mkString
