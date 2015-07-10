@@ -44,10 +44,11 @@ trait OAuth2TestCredentials {
     case ("POST", "/access_token") => Action { Results.Ok("{\"access_token\":\"" + ACCESS_TOKEN+ "\",\"refresh_token\":\"" + REFRESH_TOKEN+ "\",\"scope\":\"uid cn\",\"token_type\":\"Bearer\",\"expires_in\":3599}") }
   }
 
-
+  def enableOAuth2: Boolean = false
+  
   def fakeApp: test.FakeApplication = test.FakeApplication(
     additionalConfiguration = Map (
-      "oauth2.enabled"              -> false,
+      "oauth2.enabled"              -> enableOAuth2,
       "oauth2.callback.url"         -> callbackUrl,
       "oauth2.access.token.url"     -> accessTokenEndpoint,
       "oauth2.authorization.url"    -> authorizationEndpoint,
