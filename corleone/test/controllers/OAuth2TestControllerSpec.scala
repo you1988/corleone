@@ -1,47 +1,35 @@
+/*
+ * Copyright [2015] Zalando SE
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package controllers
 
-import org.scalatest.TestData
 import security.OAuth2Constants
-import org.scalatestplus.play.PlaySpec
-import play.api.test
+import org.scalatestplus.play._
 import play.api.mvc._
 import play.api.test._
 import play.api.test.Helpers._
-import org.scalatestplus.play._
-import scala.reflect.io.File
 import scala.language.implicitConversions
 
 
-class OAuth2ControllerSpec extends PlaySpec with OneServerPerSuite{
-
-  val OAUTH2_CALLBACK_CODE = "anyCode"
-  val OAUTH2_CALLBACK_STATE = "anyState"
-  val OAUTH2_CALLBACK_ERROR = "anyError"
-  val OAUTH2_CALLBACK_ERROR_DESCRIPTION = "very bad problem"
-  val REDIRECT_URL = "https://localhost:9000"
-  val ACCESS_TOKEN = "0989cd01-333d-4220-a699-539b452d019c"
-  val REFRESH_TOKEN = "e8e099cf-2bc7-43c4-9e80-0c8ba66e4141"
-
-  val credentialsFile = File.makeTemp().toAbsolute
-  credentialsFile.writeAll("{\"client_id\":\"my_client_id\",\"client_secret\":\"my_client_secret\"}")
-
-  implicit override lazy val app: test.FakeApplication = test.FakeApplication(
-      additionalConfiguration = Map (
-        "oauth2.enabled"              -> false,
-        "oauth2.callback.url"         -> s"http://localhost:$port/oauth_callback",
-        "oauth2.access.token.url"     -> s"http://localhost:$port/access_token",
-        "oauth2.authorization.url"    -> s"http://localhost:$port/z/oauth2/authorize",
-        "oauth2.token.info.url"       -> s"http://localhost:$port/oauth2/tokeninfo",
-        "oauth2.credentials.filePath" -> credentialsFile.toURI.getPath
-      ),
-      withRoutes = {
-            case ("POST", "/access_token") => Action { Results.Ok("{\"access_token\":\"" + ACCESS_TOKEN+ "\",\"refresh_token\":\"" + REFRESH_TOKEN+ "\",\"scope\":\"uid cn\",\"token_type\":\"Bearer\",\"expires_in\":3599}") }
-      })
-
-
+class OAuth2TestControllerSpec extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite {
+  
+  override def testPort = port
+  implicit override lazy val app = fakeApp
+  
   
   "OAUth2Controller" should {
-    
     
     "reply with 400 if no redirect URL is supplied via session" in  {
         val Some(result) = route(
@@ -179,38 +167,20 @@ class OAuth2ControllerSpec extends PlaySpec with OneServerPerSuite{
 
 
 /**
- * Lazy solution to test one specification with different route mock implementation
+ * Test of one specification with different route mock implementation
  */
-class OAuth2ControllerSpec2 extends PlaySpec with OneServerPerSuite{
+class OAuth2ControllerSpec2Test extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite{
 
-  val OAUTH2_CALLBACK_CODE = "anyCode"
-  val OAUTH2_CALLBACK_STATE = "anyState"
+  override def testPort = port
+  implicit override lazy val app = fakeApp
 
-  val OAUTH2_CALLBACK_ERROR = "anyError"
-  val OAUTH2_CALLBACK_ERROR_DESCRIPTION = "very bad problem"
-
-  val REDIRECT_URL = "https://localhost:9000"
-  val ACCESS_TOKEN = "0989cd01-333d-4220-a699-539b452d019c"
-  val REFRESH_TOKEN = "e8e099cf-2bc7-43c4-9e80-0c8ba66e4141"
-
-  val credentialsFile = File.makeTemp().toAbsolute
-  credentialsFile.writeAll("{\"client_id\":\"my_client_id\",\"client_secret\":\"my_client_secret\"}")
-
-
-  implicit override lazy val app: test.FakeApplication = test.FakeApplication(
-    additionalConfiguration = Map (
-      "oauth2.enabled"              -> false,
-      "oauth2.callback.url"         -> s"http://localhost:$port/oauth_callback",
-      "oauth2.access.token.url"     -> s"http://localhost:$port/access_token",
-      "oauth2.authorization.url"    -> s"http://localhost:$port/z/oauth2/authorize",
-      "oauth2.token.info.url"       -> s"http://localhost:$port/oauth2/tokeninfo",
-      "oauth2.credentials.filePath" -> credentialsFile.toURI.getPath
-    ),
-    withRoutes = {
-      case ("POST", "/access_token")  => Action { Results.Ok("{\"access_token\":\"" + ACCESS_TOKEN+ "\",\"scope\":\"uid cn\",\"token_type\":\"Bearer\",\"expires_in\":3599}") }
-    })
-
+  override def routes =  {
+    case ("POST", "/access_token")  => Action { Results.Ok("{\"access_token\":\"" + ACCESS_TOKEN+ "\",\"scope\":\"uid cn\",\"token_type\":\"Bearer\",\"expires_in\":3599}") }
+  }
+  
+  
   "OAUth2Controller" should {
+    
     "store only the access token in session if no refresh token could be received" in {
         val Some(result) = route(
           FakeRequest(
@@ -219,8 +189,8 @@ class OAuth2ControllerSpec2 extends PlaySpec with OneServerPerSuite{
             FakeHeaders(),
             AnyContentAsEmpty
           )
-            .withSession((OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL, REDIRECT_URL),
-              (OAuth2Constants.SESSION_KEY_STATE, OAUTH2_CALLBACK_STATE))
+          .withSession((OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL, REDIRECT_URL),
+                       (OAuth2Constants.SESSION_KEY_STATE, OAUTH2_CALLBACK_STATE))
         )
   
         status(result) mustBe SEE_OTHER
