@@ -52,8 +52,14 @@ class OAuth2Controller @Inject() (oauth2: OAuth2Helper, credentialsProvider: OAu
   // Hack in order to allow return of result instances. Otherwise, Scala can not derive the return type leading to a
   // compilation error
   def handleCallback(request: Request[AnyContent]): Result = {
-
-    val originalRequest = request.session.get(OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL).get
+    
+    val originalRequestOption = request.session.get(OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL)
+    
+    if(originalRequestOption.isEmpty) 
+      return handleError(s"no redirect URL was supplied via session [sessionKey=${OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL}]", 
+                        BAD_REQUEST)
+    
+    val originalRequest = originalRequestOption.get
     
     // check if Authorization server reported an error
     val possibleErrorOption = request.getQueryString("error")
@@ -61,7 +67,7 @@ class OAuth2Controller @Inject() (oauth2: OAuth2Helper, credentialsProvider: OAu
       val error = possibleErrorOption.get
       val errorDescription = request.getQueryString("error_description").get
       
-      val isRetryAfterAuthError = ! request.session.get("oauth2_retry_after_auth_error").isEmpty
+      val isRetryAfterAuthError = ! request.session.get(OAuth2Constants.SESSION_KEY_RETRY_AFTER_AUTH_ERROR).isEmpty
       return if (isRetryAfterAuthError){
         handleError(s"authorization server reported error via callback: [error=$error, errorDescription=$errorDescription]",
                     INTERNAL_SERVER_ERROR)
@@ -70,11 +76,9 @@ class OAuth2Controller @Inject() (oauth2: OAuth2Helper, credentialsProvider: OAu
         Logger.warn(s"authorization server reported error via callback: [error=$error, errorDescription=$errorDescription]" +
                       "-> retrying again while invalidating credentials cache and letting the user authenticate again")
         credentialsProvider.invalidateCache()
-        Redirect(originalRequest).withNewSession.withSession(("oauth2_retry_after_auth_error", "true"))
+        Redirect(originalRequest).withNewSession.withSession((OAuth2Constants.SESSION_KEY_RETRY_AFTER_AUTH_ERROR, "true"))
       }
     }
-    
-    
     
     
     val stateReceivedByCallbackOption = request.getQueryString("state")
@@ -93,45 +97,44 @@ class OAuth2Controller @Inject() (oauth2: OAuth2Helper, credentialsProvider: OAu
     
     // check for possible CSRF attack
     if (stateReceivedByCallback != stateInSession)
-      handleError("OAUTH2 state in session does not match state received from callback", CONFLICT)
+      return handleError("OAUTH2 state in session does not match state received from callback", CONFLICT)
     
-      val codeReceivedByCallbackOption = request.getQueryString("code")
-      if(codeReceivedByCallbackOption.isEmpty) return handleError("Did not receive OAUTH2 code from callback", BAD_REQUEST)
+     val codeReceivedByCallbackOption = request.getQueryString("code")
+     if(codeReceivedByCallbackOption.isEmpty) return handleError("Did not receive OAUTH2 code from callback", BAD_REQUEST)
     
     
-      // finally, request access token with the code delivered via the callback performed by the authorization server
-      val response = oauth2.requestAccessToken(codeReceivedByCallbackOption.get)
-      if (response.status == OK) {
-        val json = response.json
-        val accessTokenOption = (json \ "access_token").asOpt[String]
-        
-        if (accessTokenOption.isEmpty)
-          return handleError("Did not receive any access token from access token request", INTERNAL_SERVER_ERROR)
-        
-        val accessToken = accessTokenOption.get
-        
-        val refreshTokenOption = (json \ "refresh_token").asOpt[String]
-        
-        // redirect user back to his actual target URL together with the access token (and refresh token)
-        if (refreshTokenOption.isEmpty) {
-          Logger.warn("Did not receive any refresh token from access token request response -> access token can not be refreshed")
+    // finally, request access token with the code delivered via the callback performed by the authorization server
+    val response = oauth2.requestAccessToken(codeReceivedByCallbackOption.get)
+    if (response.status == OK) {
+      val json = response.json
+      val accessTokenOption = (json \ "access_token").asOpt[String]
+      
+      if (accessTokenOption.isEmpty)
+        return handleError("Did not receive any access token from access token request", INTERNAL_SERVER_ERROR)
+      
+      val accessToken = accessTokenOption.get
+      
+      val refreshTokenOption = (json \ "refresh_token").asOpt[String]
+      
+      // redirect user back to his actual target URL together with the access token (and refresh token)
+      if (refreshTokenOption.isEmpty) {
+        Logger.warn("Did not receive any refresh token from access token request response -> access token can not be refreshed")
 
-          Redirect(originalRequest)
-            .withNewSession
-            .withSession( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, accessToken))
-        }
-        else {
-          val refreshToken = refreshTokenOption.get
-          Redirect(originalRequest)
-            .withNewSession
-            .withSession( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, accessToken),
-                          (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken) )
-        }
+        Redirect(originalRequest)
+          .withNewSession
+          .withSession( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, accessToken))
       }
       else {
-        val error = response.body
-        InternalServerError(s"access token request was not successful: $error")
+        val refreshToken = refreshTokenOption.get
+        Redirect(originalRequest)
+          .withNewSession
+          .withSession( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, accessToken),
+                        (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken) )
       }
+    }
+    else {
+      handleError(s"access token request was not successful: ${response.body}", INTERNAL_SERVER_ERROR)
+    }
   }
   
   

@@ -34,4 +34,6 @@ object OAuth2Constants {
   val SESSION_KEY_REFRESH_TOKEN = "oauth2_refresh_token"
   val SESSION_KEY_STATE = "oauth2_state"
   val SESSION_KEY_ORIGINAL_REQUEST_URL = "oauth2_original_request_url"
+  val SESSION_KEY_RETRY_AFTER_AUTH_ERROR = "oauth2_retry_after_auth_error"
+  
 }
