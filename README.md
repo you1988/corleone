@@ -3,6 +3,7 @@ it gives you translations… and maybe someday you have opportunity to repay us 
 
 
 ## Security
+
 Corleone provides a basic implementation of the OAUTH2 [Authorization Code Grant flow]( http://tools.ietf.org/html/rfc6749#section-4.1.3).
 
 The mechanism can be easily enabled / disabled with 
@@ -42,6 +43,7 @@ The mechanism can be configured as follows:
 
 
 
+## License
 
 Copyright [2015] Zalando SE
 
@@ -49,7 +51,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
