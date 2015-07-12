@@ -20,6 +20,7 @@ import play.api.cache.CacheApi
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import utils.OAuth2TestCredentials
 
 import scala.concurrent.duration._
 

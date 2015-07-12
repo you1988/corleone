@@ -20,6 +20,7 @@ import org.scalatestplus.play._
 import play.api.mvc._
 import play.api.test._
 import play.api.test.Helpers._
+import utils.OAuth2TestCredentials
 import scala.language.implicitConversions
 
 
