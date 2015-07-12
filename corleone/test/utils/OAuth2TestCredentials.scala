@@ -1,5 +1,3 @@
-package utils
-
 /*
  * Copyright [2015] Zalando SE
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +12,8 @@ package utils
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package utils
 
 import play.api.mvc.{Action, Handler, Results}
 import play.api.test
