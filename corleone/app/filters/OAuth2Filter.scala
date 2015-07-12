@@ -53,7 +53,7 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
                     (requestHeader: RequestHeader): Future[Result] = {
     
     if(! OAuth2Constants.isOAuth2Enabled) return nextFilter.apply(requestHeader)
-
+    
     if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2Filter for path " + requestHeader.path)
     
     // go on with following filter actions, if path is not excluded from OAUTH2 security check
@@ -96,6 +96,7 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
               val newAccessTokenOption = (accessTokenRefreshResponse.json \ "access_token").asOpt[String]
               if(newAccessTokenOption.isEmpty) {
                 Logger.warn("did not receive new access token from token refresh request -> redirecting user to authorization server")
+                return oauth2.redirectToAuthorizationServer(requestHeader.path)
               }
                 
               val newAccessToken = newAccessTokenOption.get
@@ -103,10 +104,34 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
             
               // NOTE: an access token refresh request might deliver a new refresh token. if so, we must use the
               // new one for the next refresh
+            
+              val otherSessionData = requestHeader.session.data.filterKeys(k => 
+                                                                  k != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
+                                                                  k != OAuth2Constants.SESSION_KEY_REFRESH_TOKEN).toList
+
+              val cookies = requestHeader.cookies .filterNot( cookie => cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
+                                                                        cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN )
+                                                  .toList
+            
               return nextFilter(requestHeader).map{ result =>
-                if(newRefreshToken.isEmpty) result.withSession(("oauth2_access_token", newAccessToken))
-                else result.withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken), 
-                                        (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, newRefreshToken.get))
+                
+                if(newRefreshToken.isEmpty) {
+                  val sessionData: List[(String, String)] = otherSessionData ::: 
+                                                        List( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
+                                                              (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN,refreshToken))
+                  result.withSession(sessionData:_*)
+                        .withCookies(cookies:_*)
+                        .withHeaders(requestHeader.headers.headers:_*)
+                }
+                else {
+                  val sessionData: List[(String, String)] = otherSessionData :::
+                                                        List( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
+                                                              (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN,newRefreshToken.get))
+                  
+                  result.withSession(sessionData:_*)
+                      .withCookies(cookies:_*)
+                      .withHeaders(requestHeader.headers.headers:_*)
+                }
               }
           }
           else {
@@ -120,7 +145,11 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
         }
         
         // apply filter following in filter chain
-        nextFilter.apply(requestHeader)
+        nextFilter(requestHeader).map{ result =>
+            result.withSession(requestHeader.session)
+                  .withCookies(requestHeader.cookies.toList:_*)
+                  .withHeaders(requestHeader.headers.headers:_*)
+        }
       }
       else{
         Logger.info("supplied access token is NOT valid -> redirecting user to authorization server" )
@@ -152,7 +181,7 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
       case Some(expiryTime) => expiryTime <= OAuth2Constants.expiryTimeLimitForTokenRefreshInSeconds
       case _ => {
         Logger.warn("Did not receive token expiry time from token info request -> access token is considered as expired")
-        false
+        true
       }
     }
   }

@@ -167,7 +167,7 @@ class OAuth2TestControllerSpec extends PlaySpec with OAuth2TestCredentials with 
 }
 
 
-class OAuth2ControllerSpec2Test extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite{
+class OAuth2ControllerSpec2 extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite{
 
   override def testPort = port
   implicit override lazy val app = fakeApp
@@ -200,7 +200,7 @@ class OAuth2ControllerSpec2Test extends PlaySpec with OAuth2TestCredentials with
   }
 
 
-class OAuth2ControllerSpec3Test extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite {
+class OAuth2ControllerSpec3 extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite {
 
   override def testPort = port
   implicit override lazy val app = fakeApp

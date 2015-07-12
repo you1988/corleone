@@ -37,7 +37,6 @@ trait OAuth2TestCredentials {
   val REFRESH_TOKEN = "e8e099cf-2bc7-43c4-9e80-0c8ba66e4141"
   
   val credentialsFile = File("target/test.tmp").createFile().toAbsolute
-
   credentialsFile.writeAll("{\"client_id\":\"" + OAUTH2_CLIENT_ID + "\",\"client_secret\":\"" + OAUTH2_CLIENT_SECRET + "\"}")
 
   def testPort:Int = Helpers.testServerPort
@@ -50,16 +49,19 @@ trait OAuth2TestCredentials {
     case ("POST", "/access_token") => Action { Results.Ok("{\"access_token\":\"" + ACCESS_TOKEN+ "\",\"refresh_token\":\"" + REFRESH_TOKEN+ "\",\"scope\":\"uid cn\",\"token_type\":\"Bearer\",\"expires_in\":3599}") }
   }
 
+  def configuration: Map[String, _] =   Map (
+    "oauth2.enabled"              -> enableOAuth2,
+    "oauth2.callback.url"         -> callbackUrl,
+    "oauth2.access.token.url"     -> accessTokenEndpoint,
+    "oauth2.authorization.url"    -> authorizationEndpoint,
+    "oauth2.token.info.url"       -> tokenInfoEndpoint,
+    "oauth2.credentials.filePath" -> credentialsFile.toURI.getPath
+  )
+  
+  
   def enableOAuth2: Boolean = false
   
   def fakeApp: test.FakeApplication = test.FakeApplication(
-    additionalConfiguration = Map (
-      "oauth2.enabled"              -> enableOAuth2,
-      "oauth2.callback.url"         -> callbackUrl,
-      "oauth2.access.token.url"     -> accessTokenEndpoint,
-      "oauth2.authorization.url"    -> authorizationEndpoint,
-      "oauth2.token.info.url"       ->tokenInfoEndpoint,
-      "oauth2.credentials.filePath" -> credentialsFile.toURI.getPath
-    ),
+    additionalConfiguration = configuration,
     withRoutes = routes)
 }
