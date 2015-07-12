@@ -15,7 +15,6 @@
 
 package security
 
-import controllers.OAuth2TestCredentials
 import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
 import play.api.cache.CacheApi
 import org.scalatest.mock.MockitoSugar

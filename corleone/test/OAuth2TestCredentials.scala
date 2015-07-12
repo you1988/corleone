@@ -13,9 +13,7 @@
  * limitations under the License.
  */
 
-package controllers
-
-import play.api.mvc.{Action, Results, Handler}
+import play.api.mvc.{Action, Handler, Results}
 import play.api.test
 import play.api.test.Helpers
 
