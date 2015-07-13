@@ -30,6 +30,7 @@ class OAuth2ServiceCallFilterSpec extends PlaySpec with OAuth2TestCredentials wi
     
   val SERVICE_RESPONSE  = "works"
   val SERVICE_PATH = "/api/translations"
+  val CUSTOM_SERVICE_PATH = "/test-service"
   
   var wasTokenInfoRequested = false
   var isAccessGranted = true
@@ -46,7 +47,8 @@ class OAuth2ServiceCallFilterSpec extends PlaySpec with OAuth2TestCredentials wi
     "oauth2.authorization.url"    -> authorizationEndpoint,
     "oauth2.token.info.url"       ->tokenInfoEndpoint,
     "oauth2.credentials.filePath" -> credentialsFile.toURI.getPath,
-    "oauth2.excluded.paths"       -> List("/oauth2/tokeninfo")
+    "oauth2.excluded.paths"       -> List("/oauth2/tokeninfo"),
+    "oauth2.service.paths"        -> List(CUSTOM_SERVICE_PATH)
   )
   
   
@@ -65,6 +67,7 @@ class OAuth2ServiceCallFilterSpec extends PlaySpec with OAuth2TestCredentials wi
       else
         Results.Ok(ACCESS_NOT_GRANTED_TOKEN_INFO_RESPONE)
     }
+    case("GET", CUSTOM_SERVICE_PATH) => Action (Results.Ok(SERVICE_RESPONSE))
 
   }
   
@@ -168,6 +171,27 @@ class OAuth2ServiceCallFilterSpec extends PlaySpec with OAuth2TestCredentials wi
 
       status(result) mustBe FORBIDDEN
       contentAsString(result) mustBe "access is not granted"
+      wasTokenInfoRequested mustBe true
+    }
+    
+    
+    "serve custom service paths" in {
+      wasTokenInfoRequested = false
+      isAccessGranted = true
+      isTokenInfoRequestSuccessful = true
+      val headers = List(("Authorization","Bearer " + ACCESS_TOKEN))
+
+      val Some(result) = route(
+        FakeRequest(
+          GET,
+          CUSTOM_SERVICE_PATH,
+          FakeHeaders(headers),
+          AnyContentAsEmpty
+        )
+      )
+
+      status(result) mustBe OK
+      contentAsString(result) mustBe SERVICE_RESPONSE
       wasTokenInfoRequested mustBe true
     }
   }

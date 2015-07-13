@@ -28,16 +28,15 @@ import scala.concurrent.Future
 
 
 /**
- * The OAuth2Filter filters all requests for valid OAuth2 credentials, if the the filter is enabled and the requested 
- * server path is not excluded from the check (to save performance for example). Note that the filter validates the
- * access token against the token info endpoint for each (enabled) request. If the access token is almost expired,
- * it tries to refresh this token.
+ * The OAuth2Filter filters all service requests for valid OAuth2 credentials, if the the filter is enabled.
+ * Note that the filter validates the access token against the token info endpoint for each (enabled) request.
  */
 class OAuth2ServiceCallFilter @Inject() (oauth2: OAuth2Helper) extends Filter
 {
   val headerTokenRegex = """([Bb][Ee][Aa][Rr][Ee][rR])\s(\S+)""".r
-  
-  val SERVICE_PATH = "/api"
+  val customServicePaths = oauth2.extractConfiguredValueList("oauth2.service.paths")
+
+  val SERVICE_PATH = List("/api")
   val AUTHORIZATION_HEADER = "Authorization"
   val NO_AUTH_HEADER: String = "NO_AUTH_HEADER"
   val NO_TOKEN: String = "NO_TOKEN"
@@ -51,10 +50,12 @@ class OAuth2ServiceCallFilter @Inject() (oauth2: OAuth2Helper) extends Filter
     if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2ServiceCallFilter for path " + requestHeader.path)
     
     // filter focuses on OAUTH2 validation for services only
-    if(! requestHeader.path.startsWith(SERVICE_PATH)) return nextFilter.apply(requestHeader)
+    val pathMatcher = (entry: String) => requestHeader.path.startsWith(entry)
+    if(SERVICE_PATH.find(pathMatcher).isEmpty &&
+       customServicePaths.find(pathMatcher).isEmpty)
+    return nextFilter.apply(requestHeader)
     
     if (Logger.isDebugEnabled) Logger.debug("OAuth2ServiceCallFilter is executed for path " + requestHeader.path)
-    
     
     val authHeaderOption = requestHeader.headers.get(AUTHORIZATION_HEADER)
     val authHeader = authHeaderOption.getOrElse(NO_AUTH_HEADER)

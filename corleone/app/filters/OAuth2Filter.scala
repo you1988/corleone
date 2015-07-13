@@ -37,16 +37,8 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
 {
   val NO_TOKEN :String = "NO_TOKEN"
   val EXCLUDED_REQUEST_PATHS: Set[String] = Set("/oauth_callback", " /heartbeat", "/api")
-  val customExcludedRequestPaths = {
-     val excludedPathsList = Play.current.configuration.getStringList("oauth2.excluded.paths").get
-    
-    // unfortunately, excludedPathsList has type java.util.List
-    val entrySetBuilder = collection.mutable.Set.newBuilder[String]
-    val iterator = excludedPathsList.iterator()
-    while(iterator.hasNext) entrySetBuilder += iterator.next()
-    
-    entrySetBuilder.result()
-  }
+  val customExcludedRequestPaths = oauth2.extractConfiguredValueList("oauth2.excluded.paths") ++
+                                   oauth2.extractConfiguredValueList("oauth2.service.paths")
   
   
   override def apply(nextFilter: RequestHeader => Future[Result]) 

@@ -97,4 +97,22 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
     Results.Redirect(redirectUrl).withSession((OAuth2Constants.SESSION_KEY_STATE, state),
       (OAuth2Constants.SESSION_KEY_ORIGINAL_REQUEST_URL, originalRequestUrl))
   }
+
+  def extractConfiguredValueList(configKey: String): Set[String] = {
+    val configListOption = Play.current.configuration.getStringList(configKey)
+
+    if(configListOption.isEmpty) {
+      Set.empty
+    }
+    else {
+      val excludedPathsList = configListOption.get
+      
+      // unfortunately, excludedPathsList has type java.util.List
+      val entrySetBuilder = Set.newBuilder[String]
+      val iterator = excludedPathsList.iterator()
+      while(iterator.hasNext) entrySetBuilder += iterator.next()
+
+      entrySetBuilder.result
+    }
+  }
 }
