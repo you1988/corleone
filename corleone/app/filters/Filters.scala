@@ -30,6 +30,9 @@ import play.filters.headers.SecurityHeadersFilter
  * <li>https://www.playframework.com/documentation/2.4.x/GzipEncoding</li>
  * </ul>
  */
-class Filters @Inject() (oauth2Filter: OAuth2Filter, securityHeadersFilter: SecurityHeadersFilter, gzipFilter: GzipFilter) extends HttpFilters {
-  def filters = Seq(oauth2Filter, gzipFilter, securityHeadersFilter)
+class Filters @Inject() (oauth2Filter: OAuth2Filter, 
+                         oauth2ServiceFilter: OAuth2ServiceCallFilter, 
+                         securityHeadersFilter: SecurityHeadersFilter,
+                         gzipFilter: GzipFilter) extends HttpFilters {
+  def filters = Seq(oauth2Filter, oauth2ServiceFilter, gzipFilter, securityHeadersFilter)
 }

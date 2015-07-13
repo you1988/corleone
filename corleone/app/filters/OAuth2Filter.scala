@@ -28,7 +28,7 @@ import play.api.http._
 
 
 /**
- * The OAuth2Filter filters all requests for valid OAuth2 credentials, if the the filter is enabled and the requested 
+ * The OAuth2Filter filters all non-service requests for valid OAuth2 credentials, if the the filter is enabled and the requested 
  * server path is not excluded from the check (to save performance for example). Note that the filter validates the
  * access token against the token info endpoint for each (enabled) request. If the access token is almost expired,
  * it tries to refresh this token.
@@ -36,7 +36,7 @@ import play.api.http._
 class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
 {
   val NO_TOKEN :String = "NO_TOKEN"
-  val EXCLUDED_REQUEST_PATHS: Set[String] = Set("/oauth_callback", " /heartbeat")
+  val EXCLUDED_REQUEST_PATHS: Set[String] = Set("/oauth_callback", " /heartbeat", "/api")
   val customExcludedRequestPaths = {
      val excludedPathsList = Play.current.configuration.getStringList("oauth2.excluded.paths").get
     
@@ -57,7 +57,7 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
     if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2Filter for path " + requestHeader.path)
     
     // go on with following filter actions, if path is not excluded from OAUTH2 security check
-    if(EXCLUDED_REQUEST_PATHS.contains(requestHeader.path)) return nextFilter.apply(requestHeader)
+    if(! EXCLUDED_REQUEST_PATHS.find(entry => requestHeader.path.startsWith(entry)).isEmpty) return nextFilter.apply(requestHeader)
     if(! customExcludedRequestPaths.find(entry => requestHeader.path.startsWith(entry)).isEmpty) return nextFilter.apply(requestHeader)
     
     if (Logger.isDebugEnabled) Logger.debug("OAuth2Filter is executed for path " + requestHeader.path)
@@ -104,7 +104,6 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
             
               // NOTE: an access token refresh request might deliver a new refresh token. if so, we must use the
               // new one for the next refresh
-            
               val otherSessionData = requestHeader.session.data.filterKeys(k => 
                                                                   k != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
                                                                   k != OAuth2Constants.SESSION_KEY_REFRESH_TOKEN).toList
@@ -170,7 +169,10 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
         case _           => false
       }
     }
-    else false
+    else {
+      Logger.warn("request to token info endpoint was not successful -> access is not granted")
+      false
+    }
   }
   
   

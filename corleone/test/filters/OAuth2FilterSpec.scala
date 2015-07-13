@@ -136,8 +136,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
     "/assets",
     "/z/oauth2/authorize",
     "/oauth2/tokeninfo",
-    "/access_token", 
-     "/oauth2/tokeninfo")
+    "/access_token")
   )
   
 
