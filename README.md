@@ -40,7 +40,8 @@ The mechanism can be configured as follows:
     # additional server paths excluded from the OAUTH2 validation
     oauth2.excluded.paths = ["/webjars", "/assets"]
 
-
+    # additional service paths for OAUTH2 validation
+    oauth2.service.paths = ["/services"]
 
 
 ## License
