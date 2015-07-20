@@ -1,46 +1,50 @@
 package models
 
-import org.joda.time.LocalDateTime
+import java.sql.Timestamp
 
+import models.LanguageCodes.LanguageCode
+import models.Operations.Operation
 
+case class Test(id: Option[Long], name: String)
 
-case class Test(name: String)
-
-
-case class TranslationKey(id: Option[Int],
+case class TranslationKey(id: Option[Long],
                           name: String,
                           isActive: Boolean,
-                          created:LocalDateTime)
+                          created:Timestamp)
 
-class Locale extends Enumeration {
-  type Locale = Value
+object LanguageCodes extends Enumeration {
+  type LanguageCode = Value
   val EN_GB, EN_US, DE_DE = Value
 }
 
-case class TranslationMessage(id: Option[Int],
-                              name: String,
-                              translationKey: TranslationKey,
+case class TranslationMessage(id: Option[Long],
+                              languageCode: LanguageCode,
+                              translationKeyId: Long,
+                              value: String,
                               isActive: Boolean,
-                              lastModified:LocalDateTime,
-                              created:LocalDateTime)
+                              lastModified:Timestamp,
+                              created:Timestamp)
 
-class Operation extends Enumeration {
+object Operations extends Enumeration {
   type Operation = Value
-  val MODIFIED, DELETE = Value
+  val CREED, MODIFIED, DELETED = Value
 }
 
-case class Version(id: Option[Int],
+case class Version(id: Option[Long],
                    name: String,
-                   translationKey: TranslationKey,
-                   translationMessage: TranslationMessage,
+                   translationKeyId: Long,
+                   translationMessageId: Long,
                    performedOperation: Operation,
-                   lastApply:LocalDateTime,
-                   created:LocalDateTime)
+                   lastApply:Timestamp,
+                   created:Timestamp)
 
-case class Tag(id: Option[Int],
+case class TagHolder(id: Option[Long],
                           name: String,
-                          created:LocalDateTime)
+                          created:Timestamp)
 
-case class TranslationTagging(id: Option[Int],
-                              name: String,
-                              created:LocalDateTime)
+case class TranslationTagging(id: Option[Long],
+                              tagId: Long,
+                              translationKeyId: Long,
+                              isActive: Boolean,
+                              lastModified:Timestamp,
+                              created:Timestamp)

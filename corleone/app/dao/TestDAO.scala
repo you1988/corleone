@@ -1,38 +1,21 @@
-package dao
 
-import slick.ast.ColumnOption.AutoInc
-
+import models.{TestTable, Test}
+import slick.driver.PostgresDriver.api._
 import scala.concurrent.Future
 
-import javax.inject.Inject
-import models.Test
-import play.api.db.slick.DatabaseConfigProvider
-import play.api.db.slick.HasDatabaseConfigProvider
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import slick.driver.JdbcProfile
 
-class TestDAO @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] with SchemaConfig {
-  import driver.api._
-
-  private val Tests = TableQuery[TestsTable]
-
-  def all(): Future[Seq[Test]] = db.run(Tests.result)
+class TestDAO{
+  private val testTable = TableQuery[TestTable]
   
-  def delete(name: String): Future[Int] = db.run(Tests.filter(_.name === name).delete)
+  private def db: Database = Database.forConfig("slick.dbs.default")
 
-  def insert(test: Test): Future[Unit] = db.run(Tests += test).map { _ => () }
+  private def filterQuery(id: Long): Query[TestTable, Test, Seq] =
+    testTable.filter(_.id === id)
 
-  private class TestsTable(tag: Tag) extends Table[Test](tag, schema, "test") {
-    
-    def id = column[Int]("t_id", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("t_name")
+  def findById(id: Long): Future[Test] = db.run(filterQuery(id).result.head)
 
-    
-    def * = name <> (Test,Test.unapply)
-     
-  }
+  def findByName(name: String): Future[Test] = db.run(testTable.filter(x => x.name === name).result.head)
   
-  
-  
+  def insert(test : Test): Future[Int] = db.run(testTable += test)
   
 }

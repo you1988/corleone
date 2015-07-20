@@ -25,8 +25,10 @@ libraryDependencies ++= Seq(
   specs2 % Test,
   filters,
   "org.webjars"  % "bootstrap"    % "3.3.5",
-  "com.typesafe.play" %% "play-slick" % "1.0.0",
+  "com.typesafe.slick" %% "slick" % "3.0.0",
+  "com.zaxxer" % "HikariCP-java6" % "2.3.3",
   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+  "com.github.tminglei" %% "slick-pg" % "0.9.0",
   "org.webjars"  % "jquery"       % "2.1.4",
   "org.webjars"  % "jquery-ui"    % "1.11.4",
   "org.webjars" %% "webjars-play" % "2.4.0-1"

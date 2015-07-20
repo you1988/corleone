@@ -7,12 +7,13 @@ CREATE TABLE ts_data.translation_key (
 CREATE UNIQUE INDEX ON ts_data.translation_key (tk_name, tk_is_active)
   WHERE tk_is_active;
 
-CREATE TYPE ts_data.locale as ENUM('EN_GB','EN_US','DE_DE');
+CREATE TYPE ts_data.language_code as ENUM('EN_GB','EN_US','DE_DE');
 
 CREATE TABLE ts_data.translation_message (
   "tm_id" BIGSERIAL NOT NULL PRIMARY KEY,
   "tm_translation_key_id" BIGINT NOT NULL REFERENCES ts_data.translation_key(tk_id),
-  "tm_locale" ts_data.locale NOT NULL,
+  "tm_language_code" ts_data.language_code NOT NULL,
+  "tm_value" TEXT NOT NULL,
   "tm_is_active" BOOLEAN NOT NULL,
   "tm_last_modified" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CLOCK_TIMESTAMP(),
   "tm_created" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CLOCK_TIMESTAMP()
@@ -49,7 +50,7 @@ CREATE TABLE ts_data.translation_tagging(
   "tt_created" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CLOCK_TIMESTAMP()
 );
 
-CREATE UNIQUE INDEX ON ts_data.translation_tagging (tt_tag_id, tt_translation_key_id, tt_is_active)
+CREATE UNIQUE INDEX ON ts_data.translation_tagging(tt_tag_id, tt_translation_key_id, tt_is_active)
   WHERE tt_is_active;
 
 
