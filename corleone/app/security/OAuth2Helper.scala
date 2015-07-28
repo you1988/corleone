@@ -52,7 +52,7 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
   }
 
 
-  def refreshAccessToken(refreshToken: String, wasAlreadyCalledBefore: Boolean = false): WSResponse = {
+  def refreshAccessToken(refreshToken: String, wasAlreadyCalledBefore: Boolean = false): Future[WSResponse] = {
 
     val credentials = credentialsProvider.get
     val payload = s"grant_type=refresh_token&refresh_token=$refreshToken&realm=employees"
@@ -63,14 +63,21 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
       .withRequestTimeout(OAuth2Constants.requestTimeout)
       .post(payload)
     
-    val response = Await.result(futureResponse, Duration(5L, SECONDS))
-
-    // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
-    if(response.status != Status.OK && ! wasAlreadyCalledBefore) {
-      credentialsProvider.invalidateCache()
-      refreshAccessToken(refreshToken, true)
+    //val response = Await.result(futureResponse, Duration(5L, SECONDS))
+    futureResponse.flatMap{ response =>
+      // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
+      
+      if(response.status != Status.OK && ! wasAlreadyCalledBefore) {
+        credentialsProvider.invalidateCache()
+        refreshAccessToken(refreshToken, true)
+      }
+      else Future[WSResponse](response)
+      
     }
-    else response
+    
+
+
+
   }
 
 

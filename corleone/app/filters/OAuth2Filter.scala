@@ -81,58 +81,60 @@ class OAuth2Filter @Inject()(oauth2: OAuth2Helper) extends Filter {
             else {
 
               val refreshToken = refreshTokenOption.get
-              val accessTokenRefreshResponse = oauth2.refreshAccessToken(refreshToken)
+              val accessTokenRefreshResponseFuture = oauth2.refreshAccessToken(refreshToken)
 
-              if (accessTokenRefreshResponse.status == Status.OK) {
+              accessTokenRefreshResponseFuture.flatMap { accessTokenRefreshResponse =>
+                if (accessTokenRefreshResponse.status == Status.OK) {
 
-                Logger.debug("access token refresh request WAS successful")
+                  Logger.debug("access token refresh request WAS successful")
 
-                val newAccessTokenOption = (accessTokenRefreshResponse.json \ "access_token").asOpt[String]
-                if (newAccessTokenOption.isEmpty) {
-                  Logger.warn("did not receive new access token from token refresh request -> redirecting user to authorization server")
-                  oauth2.redirectToAuthorizationServer(requestHeader.path)
-                }
-                else {
-                  val newAccessToken = newAccessTokenOption.get
-                  val newRefreshToken = (accessTokenRefreshResponse.json \ "refresh_token").asOpt[String]
+                  val newAccessTokenOption = (accessTokenRefreshResponse.json \ "access_token").asOpt[String]
+                  if (newAccessTokenOption.isEmpty) {
+                    Logger.warn("did not receive new access token from token refresh request -> redirecting user to authorization server")
+                    oauth2.redirectToAuthorizationServer(requestHeader.path)
+                  }
+                  else {
+                    val newAccessToken = newAccessTokenOption.get
+                    val newRefreshToken = (accessTokenRefreshResponse.json \ "refresh_token").asOpt[String]
 
-                  // NOTE: an access token refresh request might deliver a new refresh token. if so, we must use the
-                  // new one for the next refresh
-                  val otherSessionData = requestHeader.session.data.filterKeys(k =>
-                    k != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
-                      k != OAuth2Constants.SESSION_KEY_REFRESH_TOKEN).toList
+                    // NOTE: an access token refresh request might deliver a new refresh token. if so, we must use the
+                    // new one for the next refresh
+                    val otherSessionData = requestHeader.session.data.filterKeys(k =>
+                      k != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
+                        k != OAuth2Constants.SESSION_KEY_REFRESH_TOKEN).toList
 
-                  val cookies = requestHeader.cookies.filterNot(cookie => cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
-                    cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN)
-                    .toList
+                    val cookies = requestHeader.cookies.filterNot(cookie => cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
+                      cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN)
+                      .toList
 
-                  
-                  nextFilter(requestHeader).map { result =>
 
-                    if (newRefreshToken.isEmpty) {
-                      val sessionData: List[(String, String)] = otherSessionData :::
-                        List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
-                          (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken))
-                      result.withSession(sessionData: _*)
-                        .withCookies(cookies: _*)
-                        .withHeaders(requestHeader.headers.headers: _*)
-                    }
-                    else {
-                      val sessionData: List[(String, String)] = otherSessionData :::
-                        List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
-                          (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, newRefreshToken.get))
+                    nextFilter(requestHeader).map { result =>
 
-                      result.withSession(sessionData: _*)
-                        .withCookies(cookies: _*)
-                        .withHeaders(requestHeader.headers.headers: _*)
+                      if (newRefreshToken.isEmpty) {
+                        val sessionData: List[(String, String)] = otherSessionData :::
+                          List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
+                            (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken))
+                        result.withSession(sessionData: _*)
+                          .withCookies(cookies: _*)
+                          .withHeaders(requestHeader.headers.headers: _*)
+                      }
+                      else {
+                        val sessionData: List[(String, String)] = otherSessionData :::
+                          List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
+                            (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, newRefreshToken.get))
+
+                        result.withSession(sessionData: _*)
+                          .withCookies(cookies: _*)
+                          .withHeaders(requestHeader.headers.headers: _*)
+                      }
                     }
                   }
                 }
-              }
-              else {
-                val error = accessTokenRefreshResponse.body
-                Logger.info(s"access token refresh request was NOT successful -> redirecting user to authorization server [error=$error]")
-                oauth2.redirectToAuthorizationServer(requestHeader.path)
+                else {
+                  val error = accessTokenRefreshResponse.body
+                  Logger.info(s"access token refresh request was NOT successful -> redirecting user to authorization server [error=$error]")
+                  oauth2.redirectToAuthorizationServer(requestHeader.path)
+                }
               }
             }
           }
