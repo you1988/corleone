@@ -95,11 +95,7 @@ class OAuth2ServiceCallFilter @Inject()(oauth2: OAuth2Helper) extends Filter {
           }
         }
       }
-
-
     }
-
-
   }
 
 

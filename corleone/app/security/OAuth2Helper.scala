@@ -30,7 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
 
 
-  def requestAccessToken(oauth2Code: String, wasAlreadyCalledBefore: Boolean = false): WSResponse = {
+  def requestAccessToken(oauth2Code: String, wasAlreadyCalledBefore: Boolean = false): Future[WSResponse] = {
     val credentials = credentialsProvider.get
     val callbackUrl = OAuth2Constants.callbackUrl
     val payload = s"grant_type=authorization_code&code=$oauth2Code&realm=employees&redirect_uri=$callbackUrl"
@@ -41,14 +41,16 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
       .withRequestTimeout(OAuth2Constants.requestTimeout)
       .post(payload)
 
-    val response =  Await.result(futureResponse, Duration(5L, SECONDS))
+    //val response =  Await.result(futureResponse, Duration(5L, SECONDS))
     
-    // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
-    if(response.status != Status.OK && ! wasAlreadyCalledBefore) {
-      credentialsProvider.invalidateCache()
-      requestAccessToken(oauth2Code, true)
-    } 
-    else response
+    futureResponse.flatMap{response =>
+      // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
+      if(response.status != Status.OK && ! wasAlreadyCalledBefore) {
+        credentialsProvider.invalidateCache()
+        requestAccessToken(oauth2Code, true)
+      }
+      else Future[WSResponse](response)
+    }
   }
 
 
@@ -63,10 +65,8 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
       .withRequestTimeout(OAuth2Constants.requestTimeout)
       .post(payload)
     
-    //val response = Await.result(futureResponse, Duration(5L, SECONDS))
     futureResponse.flatMap{ response =>
       // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
-      
       if(response.status != Status.OK && ! wasAlreadyCalledBefore) {
         credentialsProvider.invalidateCache()
         refreshAccessToken(refreshToken, true)
@@ -74,10 +74,6 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
       else Future[WSResponse](response)
       
     }
-    
-
-
-
   }
 
 
