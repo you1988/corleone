@@ -15,11 +15,17 @@
 
 package filters
 
+import java.util.concurrent.TimeUnit
+
+import akka.util.Timeout
 import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
 import play.api.mvc.{Action, Results, Handler, AnyContentAsEmpty}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.test.Helpers._
 import utils.OAuth2TestCredentials
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 
 class OAuth2ServiceCallFilterSpec extends PlaySpec with OAuth2TestCredentials with OneServerPerSuite {
@@ -128,7 +134,7 @@ class OAuth2ServiceCallFilterSpec extends PlaySpec with OAuth2TestCredentials wi
           AnyContentAsEmpty
         )
       )
-
+      
       status(result) mustBe OK
       contentAsString(result) mustBe SERVICE_RESPONSE
       wasTokenInfoRequested mustBe true
@@ -148,7 +154,7 @@ class OAuth2ServiceCallFilterSpec extends PlaySpec with OAuth2TestCredentials wi
           AnyContentAsEmpty
         )
       )
-
+      
       status(result) mustBe FORBIDDEN
       contentAsString(result) mustBe "access is not granted"
       wasTokenInfoRequested mustBe true

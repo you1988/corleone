@@ -74,12 +74,11 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
   }
 
 
-  def requestTokenInfo(accessToken: String): WSResponse = {
-    val futureTokenInfoResponse = WS.url(OAuth2Constants.tokenInfoUrl)(Play.current)
+  def requestTokenInfo(accessToken: String): Future[WSResponse] = {
+    WS.url(OAuth2Constants.tokenInfoUrl)(Play.current)
       .withQueryString(("access_token", accessToken))
       .get()
 
-    Await.result(futureTokenInfoResponse, Duration(5L, SECONDS))
   }
 
 
