@@ -18,7 +18,7 @@ package filters
 
 import javax.inject.Inject
 
-import play.api.{Logger,  Play}
+import play.api.{Logger, Play}
 import security.{OAuth2Helper, OAuth2Constants}
 import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -33,132 +33,142 @@ import play.api.http._
  * access token against the token info endpoint for each (enabled) request. If the access token is almost expired,
  * it tries to refresh this token.
  */
-class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
-{
-  val NO_TOKEN :String = "NO_TOKEN"
+class OAuth2Filter @Inject()(oauth2: OAuth2Helper) extends Filter {
+  val NO_TOKEN: String = "NO_TOKEN"
   val EXCLUDED_REQUEST_PATHS: Set[String] = Set("/oauth_callback", " /heartbeat", "/api")
   val customExcludedRequestPaths = oauth2.extractConfiguredValueList("oauth2.excluded.paths") ++
-                                   oauth2.extractConfiguredValueList("oauth2.service.paths")
-  
-  
-  override def apply(nextFilter: RequestHeader => Future[Result]) 
+    oauth2.extractConfiguredValueList("oauth2.service.paths")
+
+
+  override def apply(nextFilter: RequestHeader => Future[Result])
                     (requestHeader: RequestHeader): Future[Result] = {
-    
-    if(! OAuth2Constants.isOAuth2Enabled) return nextFilter.apply(requestHeader)
-    
+
+    if (!OAuth2Constants.isOAuth2Enabled) return nextFilter.apply(requestHeader)
+
     if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2Filter for path " + requestHeader.path)
-    
+
     // go on with following filter actions, if path is not excluded from OAUTH2 security check
-    if(! EXCLUDED_REQUEST_PATHS.find(entry => requestHeader.path.startsWith(entry)).isEmpty) return nextFilter.apply(requestHeader)
-    if(! customExcludedRequestPaths.find(entry => requestHeader.path.startsWith(entry)).isEmpty) return nextFilter.apply(requestHeader)
-    
+    if (!EXCLUDED_REQUEST_PATHS.find(entry => requestHeader.path.startsWith(entry)).isEmpty) return nextFilter.apply(requestHeader)
+    if (!customExcludedRequestPaths.find(entry => requestHeader.path.startsWith(entry)).isEmpty) return nextFilter.apply(requestHeader)
+
     if (Logger.isDebugEnabled) Logger.debug("OAuth2Filter is executed for path " + requestHeader.path)
-    
+
     val accessTokenOption = requestHeader.session.get("oauth2_access_token")
     val accessToken = accessTokenOption.getOrElse(NO_TOKEN)
-    
+
     if (accessToken == NO_TOKEN) {
       Logger.info("No token was supplied -> redirecting user to authorization server")
       oauth2.redirectToAuthorizationServer(requestHeader.path)
     }
     else {
-      val tokenInfoResponse = oauth2.requestTokenInfo(accessToken)
-      
-      if (isAccessGranted(tokenInfoResponse)){
-        Logger.info("supplied access token IS valid")
+      val tokenInfoResponseFuture = oauth2.requestTokenInfo(accessToken)
 
-        if(isAccessTokenAlmostExpired(tokenInfoResponse)) {
+      tokenInfoResponseFuture.flatMap { tokenInfoResponse =>
 
-          Logger.debug("access token IS almost expired -> trying to refresh access token")
-          
-          val refreshTokenOption = requestHeader.session.get(OAuth2Constants.SESSION_KEY_REFRESH_TOKEN)
+        if (isAccessGranted(tokenInfoResponse)) {
+          Logger.info("supplied access token IS valid")
 
-          if ( refreshTokenOption.isEmpty ) {
-            Logger.warn("could not find refresh token in current session -> redirecting user to authorization server")
-            return oauth2.redirectToAuthorizationServer(requestHeader.path)
-          }
-          
-          val refreshToken = refreshTokenOption.get
-          val accessTokenRefreshResponse = oauth2.refreshAccessToken(refreshToken)
-          
-          if(accessTokenRefreshResponse.status == Status.OK) {
-              
-              Logger.debug("access token refresh request WAS successful")
-                          
-              val newAccessTokenOption = (accessTokenRefreshResponse.json \ "access_token").asOpt[String]
-              if(newAccessTokenOption.isEmpty) {
-                Logger.warn("did not receive new access token from token refresh request -> redirecting user to authorization server")
-                return oauth2.redirectToAuthorizationServer(requestHeader.path)
-              }
-                
-              val newAccessToken = newAccessTokenOption.get
-              val newRefreshToken = (accessTokenRefreshResponse.json \ "refresh_token").asOpt[String]
-            
-              // NOTE: an access token refresh request might deliver a new refresh token. if so, we must use the
-              // new one for the next refresh
-              val otherSessionData = requestHeader.session.data.filterKeys(k => 
-                                                                  k != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
-                                                                  k != OAuth2Constants.SESSION_KEY_REFRESH_TOKEN).toList
+          if (isAccessTokenAlmostExpired(tokenInfoResponse)) {
 
-              val cookies = requestHeader.cookies .filterNot( cookie => cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
-                                                                        cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN )
-                                                  .toList
-            
-              return nextFilter(requestHeader).map{ result =>
-                
-                if(newRefreshToken.isEmpty) {
-                  val sessionData: List[(String, String)] = otherSessionData ::: 
-                                                        List( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
-                                                              (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN,refreshToken))
-                  result.withSession(sessionData:_*)
-                        .withCookies(cookies:_*)
-                        .withHeaders(requestHeader.headers.headers:_*)
+            Logger.debug("access token IS almost expired -> trying to refresh access token")
+
+            val refreshTokenOption = requestHeader.session.get(OAuth2Constants.SESSION_KEY_REFRESH_TOKEN)
+
+            if (refreshTokenOption.isEmpty) {
+              Logger.warn("could not find refresh token in current session -> redirecting user to authorization server")
+              oauth2.redirectToAuthorizationServer(requestHeader.path)
+            }
+            else {
+
+              val refreshToken = refreshTokenOption.get
+              val accessTokenRefreshResponse = oauth2.refreshAccessToken(refreshToken)
+
+              if (accessTokenRefreshResponse.status == Status.OK) {
+
+                Logger.debug("access token refresh request WAS successful")
+
+                val newAccessTokenOption = (accessTokenRefreshResponse.json \ "access_token").asOpt[String]
+                if (newAccessTokenOption.isEmpty) {
+                  Logger.warn("did not receive new access token from token refresh request -> redirecting user to authorization server")
+                  oauth2.redirectToAuthorizationServer(requestHeader.path)
                 }
                 else {
-                  val sessionData: List[(String, String)] = otherSessionData :::
-                                                        List( (OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
-                                                              (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN,newRefreshToken.get))
+                  val newAccessToken = newAccessTokenOption.get
+                  val newRefreshToken = (accessTokenRefreshResponse.json \ "refresh_token").asOpt[String]
+
+                  // NOTE: an access token refresh request might deliver a new refresh token. if so, we must use the
+                  // new one for the next refresh
+                  val otherSessionData = requestHeader.session.data.filterKeys(k =>
+                    k != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
+                      k != OAuth2Constants.SESSION_KEY_REFRESH_TOKEN).toList
+
+                  val cookies = requestHeader.cookies.filterNot(cookie => cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN &&
+                    cookie.name != OAuth2Constants.SESSION_KEY_ACCESS_TOKEN)
+                    .toList
+
                   
-                  result.withSession(sessionData:_*)
-                      .withCookies(cookies:_*)
-                      .withHeaders(requestHeader.headers.headers:_*)
+                  nextFilter(requestHeader).map { result =>
+
+                    if (newRefreshToken.isEmpty) {
+                      val sessionData: List[(String, String)] = otherSessionData :::
+                        List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
+                          (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken))
+                      result.withSession(sessionData: _*)
+                        .withCookies(cookies: _*)
+                        .withHeaders(requestHeader.headers.headers: _*)
+                    }
+                    else {
+                      val sessionData: List[(String, String)] = otherSessionData :::
+                        List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
+                          (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, newRefreshToken.get))
+
+                      result.withSession(sessionData: _*)
+                        .withCookies(cookies: _*)
+                        .withHeaders(requestHeader.headers.headers: _*)
+                    }
+                  }
                 }
               }
+              else {
+                val error = accessTokenRefreshResponse.body
+                Logger.info(s"access token refresh request was NOT successful -> redirecting user to authorization server [error=$error]")
+                oauth2.redirectToAuthorizationServer(requestHeader.path)
+              }
+            }
           }
           else {
-            val error = accessTokenRefreshResponse.body
-            Logger.info(s"access token refresh request was NOT successful -> redirecting user to authorization server [error=$error]")
-            return oauth2.redirectToAuthorizationServer(requestHeader.path)
+            Logger.debug("access token is NOT almost expired")
+
+
+            // apply filter following in filter chain
+            nextFilter(requestHeader).map { result =>
+              result.withSession(requestHeader.session)
+                .withCookies(requestHeader.cookies.toList: _*)
+                .withHeaders(requestHeader.headers.headers: _*)
+            }
           }
         }
         else {
-          Logger.debug("access token is NOT almost expired")
+          Logger.info("supplied access token is NOT valid -> redirecting user to authorization server")
+          oauth2.redirectToAuthorizationServer(requestHeader.path)
         }
-        
-        // apply filter following in filter chain
-        nextFilter(requestHeader).map{ result =>
-            result.withSession(requestHeader.session)
-                  .withCookies(requestHeader.cookies.toList:_*)
-                  .withHeaders(requestHeader.headers.headers:_*)
-        }
+
       }
-      else{
-        Logger.info("supplied access token is NOT valid -> redirecting user to authorization server" )
-        oauth2.redirectToAuthorizationServer(requestHeader.path)
-      }
+
+
     }
   }
 
-  
+
   def isAccessGranted(response: WSResponse): Boolean = {
     // token is still valid. now. let's check if user has sufficient scopes 
-    if (response.status == Status.OK){
+    if (response.status == Status.OK) {
       // at the moment, we can only check if the user is an employee. In the future, it will be possible to assign
       // more scopes to an user
       val realmOption = (response.json \ "realm").asOpt[String]
       realmOption match {
         case Some(realm) => realm == "employees"
-        case _           => false
+        case _ => false
       }
     }
     else {
@@ -166,8 +176,8 @@ class OAuth2Filter @Inject() (oauth2: OAuth2Helper) extends Filter
       false
     }
   }
-  
-  
+
+
   def isAccessTokenAlmostExpired(tokenInfoResponse: WSResponse): Boolean = {
     val tokenExpiryTimeInSecondsOption = (tokenInfoResponse.json \ "expires_in").asOpt[Int]
 

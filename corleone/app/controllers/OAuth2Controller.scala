@@ -21,6 +21,7 @@ import play.api._
 import play.api.mvc._
 import security.{OAuth2CredentialsProvider, OAuth2Helper, OAuth2Constants}
 
+import scala.concurrent.Future
 
 
 /**
@@ -38,8 +39,8 @@ class OAuth2Controller @Inject() (oauth2: OAuth2Helper, credentialsProvider: OAu
    * the session and redirect the user to her actual target URL. Note: Also the redirect goes through OAuth2Filter
    * where the access token is validated for each request.
    */
-  def callback = Action{ request =>
-    handleCallback(request)
+  def callback = Action.async{ request =>
+    Future.successful(handleCallback(request))
   }
  
   

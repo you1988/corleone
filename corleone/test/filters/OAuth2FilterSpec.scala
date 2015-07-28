@@ -139,10 +139,6 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
     "/access_token")
   )
   
-
-  var wasTokenInfoRequested = false
-  var wasTokenRefreshed = false
-  
   val NEW_ACCESS_TOKEN = "NEW_ACCESS_TOKEN"
   val NEW_REFRESH_TOKEN = "NEW_REFRESH_TOKEN"
   val STANDARD_REFRESH_RESPONSE = "{\"access_token\":\"" + NEW_ACCESS_TOKEN + "\",\"grant_type\":\"refresh_token\",\"expires_in\":399}"
@@ -157,12 +153,10 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
     case ("GET", TARGET_PATH) => Action { 
       Results.Ok(TARGET_RESPONSE) 
     }
-    case ("GET", "/oauth2/tokeninfo") => Action { 
-      wasTokenInfoRequested = true
+    case ("GET", "/oauth2/tokeninfo") => Action {
       Results.Ok(tokenInfoResponse) 
     }
     case ("POST", "/access_token") => Action {
-        wasTokenRefreshed = true
         if(isTokenRefreshRequestSuccessful) Results.Ok(accessTokenRefreshResponse)
         else Results.BadRequest("no refresh this time")
     }
@@ -172,8 +166,6 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
   "OAuth2Filter" should {
 
     "redirect a request if access token is almost expired and no refresh token is available" in {
-      wasTokenInfoRequested = false
-      wasTokenRefreshed = false
       accessTokenRefreshResponse = STANDARD_REFRESH_RESPONSE
       tokenInfoResponse = STANDARD_TOKEN_INFO_RESPONSE
       isTokenRefreshRequestSuccessful = true
@@ -185,9 +177,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
           FakeHeaders(),
           AnyContentAsEmpty
         ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, ACCESS_TOKEN)))
-
       
-      wasTokenInfoRequested mustBe true
       status(result) mustBe SEE_OTHER
       checkTargetPath(result)
       session(result).get(OAuth2Constants.SESSION_KEY_STATE) mustNot be(None)
@@ -196,8 +186,6 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
   
   
   "refresh access token, if access token is almost expired" in {
-    wasTokenInfoRequested = false
-    wasTokenRefreshed = false
     accessTokenRefreshResponse = STANDARD_REFRESH_RESPONSE
     tokenInfoResponse = STANDARD_TOKEN_INFO_RESPONSE
     isTokenRefreshRequestSuccessful = true
@@ -211,8 +199,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
       ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, ACCESS_TOKEN),
                     (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, REFRESH_TOKEN)))
     
-    wasTokenInfoRequested mustBe true
-    wasTokenRefreshed mustBe true
+
     status(result) mustBe OK
     session(result).get(OAuth2Constants.SESSION_KEY_ACCESS_TOKEN) mustBe(Some(NEW_ACCESS_TOKEN))
     session(result).get(OAuth2Constants.SESSION_KEY_REFRESH_TOKEN) mustBe(Some(REFRESH_TOKEN))
@@ -220,8 +207,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
 
   
   "use new refresh token, if refresh request returns a new one" in {
-     wasTokenInfoRequested = false
-     wasTokenRefreshed = false
+
      tokenInfoResponse = STANDARD_TOKEN_INFO_RESPONSE
      accessTokenRefreshResponse = "{\"refresh_token\":\""+ NEW_REFRESH_TOKEN + "\",\"access_token\":\"" + NEW_ACCESS_TOKEN + "\",\"grant_type\":\"refresh_token\",\"expires_in\":399}"
      isTokenRefreshRequestSuccessful = true
@@ -234,9 +220,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
           AnyContentAsEmpty
         ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, ACCESS_TOKEN),
             (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, REFRESH_TOKEN)))
-
-     wasTokenInfoRequested mustBe true
-     wasTokenRefreshed mustBe true
+    
      status(result) mustBe OK
      session(result).get(OAuth2Constants.SESSION_KEY_ACCESS_TOKEN) mustBe(Some(NEW_ACCESS_TOKEN))
      session(result).get(OAuth2Constants.SESSION_KEY_REFRESH_TOKEN) mustBe(Some(NEW_REFRESH_TOKEN))
@@ -244,8 +228,6 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
   }
   
   "not do anything, if everything is fine" in {
-    wasTokenInfoRequested = false
-    wasTokenRefreshed = false
     accessTokenRefreshResponse = STANDARD_REFRESH_RESPONSE
     tokenInfoResponse = "{\"access_token\":\"d1f2bf18-16f9-4da5-8b0b-75d1a702122d\",\"uid\":\"bfriedrich\",\"grant_type\":\"password\",\"scope\":[\"uid\",\"cn\"],\"realm\":\"employees\",\"cn\":\"\",\"token_type\":\"Bearer\",\"expires_in\":399}"
     isTokenRefreshRequestSuccessful = true
@@ -259,8 +241,6 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
       ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN,  ACCESS_TOKEN),
                     (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, REFRESH_TOKEN)))
     
-    wasTokenInfoRequested mustBe true
-    wasTokenRefreshed mustBe false
     status(result) mustBe OK
     session(result).get(OAuth2Constants.SESSION_KEY_ACCESS_TOKEN) mustBe(Some(ACCESS_TOKEN))
     session(result).get(OAuth2Constants.SESSION_KEY_REFRESH_TOKEN) mustBe(Some(REFRESH_TOKEN))
@@ -268,8 +248,6 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
   
   
   "redirect a request, if refresh request returns with no access token" in {
-    wasTokenInfoRequested = false
-    wasTokenRefreshed = false
     accessTokenRefreshResponse = "{\"grant_type\":\"refresh_token\",\"expires_in\":399}"
     tokenInfoResponse = STANDARD_TOKEN_INFO_RESPONSE
     isTokenRefreshRequestSuccessful = true
@@ -282,9 +260,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
         AnyContentAsEmpty
       ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, ACCESS_TOKEN),
                     (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, REFRESH_TOKEN)))
-
-    wasTokenInfoRequested mustBe true
-    wasTokenRefreshed mustBe true
+    
     status(result) mustBe SEE_OTHER
     checkTargetPath(result)
     session(result).get(OAuth2Constants.SESSION_KEY_STATE) mustNot be(None)
@@ -293,8 +269,6 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
 
 
   "redirect request, if refresh token request is not successful" in {
-    wasTokenInfoRequested = false
-    wasTokenRefreshed = false
     accessTokenRefreshResponse = STANDARD_REFRESH_RESPONSE
     tokenInfoResponse = STANDARD_TOKEN_INFO_RESPONSE
     isTokenRefreshRequestSuccessful = false
@@ -307,9 +281,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
         AnyContentAsEmpty
       ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN,  ACCESS_TOKEN),
           (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, REFRESH_TOKEN)))
-
-    wasTokenInfoRequested mustBe true
-    wasTokenRefreshed mustBe true
+    
     status(result) mustBe SEE_OTHER
     checkTargetPath(result)
     session(result).get(OAuth2Constants.SESSION_KEY_STATE) mustNot be(None)
@@ -317,9 +289,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
   }
 
 
-  "try to refresh access tokeb, if no expiry time can be retrieved from token info request" in {
-    wasTokenInfoRequested = false
-    wasTokenRefreshed = false
+  "try to refresh access token, if no expiry time can be retrieved from token info request" in {
     accessTokenRefreshResponse = STANDARD_REFRESH_RESPONSE
     tokenInfoResponse = "{\"access_token\":\"d1f2bf18-16f9-4da5-8b0b-75d1a702122d\",\"uid\":\"bfriedrich\",\"grant_type\":\"password\",\"scope\":[\"uid\",\"cn\"],\"realm\":\"employees\",\"cn\":\"\",\"token_type\":\"Bearer\"}"
     isTokenRefreshRequestSuccessful = true
@@ -332,17 +302,13 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
         AnyContentAsEmpty
       ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN,  ACCESS_TOKEN),
                      (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, REFRESH_TOKEN)))
-
-    wasTokenInfoRequested mustBe true
-    wasTokenRefreshed mustBe true
+    
     status(result) mustBe OK
     session(result).get(OAuth2Constants.SESSION_KEY_ACCESS_TOKEN) mustBe(Some(NEW_ACCESS_TOKEN))
     session(result).get(OAuth2Constants.SESSION_KEY_REFRESH_TOKEN) mustBe(Some(REFRESH_TOKEN))
   }
 
   "redirect request, if access is not granted with current access token" in {
-    wasTokenInfoRequested = false
-    wasTokenRefreshed = false
     accessTokenRefreshResponse = STANDARD_REFRESH_RESPONSE
     tokenInfoResponse = "{\"access_token\":\"d1f2bf18-16f9-4da5-8b0b-75d1a702122d\",\"uid\":\"bfriedrich\",\"grant_type\":\"password\",\"scope\":[\"uid\",\"cn\"],\"realm\":\"employeesXXX\",\"cn\":\"\",\"token_type\":\"Bearer\",\"expires_in\":399}"
     isTokenRefreshRequestSuccessful = true
@@ -355,9 +321,7 @@ class OAuth2FilterSpec2 extends PlaySpec with OAuth2FilterTestMethods with OneSe
         AnyContentAsEmpty
       ).withSession((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN,  ACCESS_TOKEN),
           (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, REFRESH_TOKEN)))
-
-    wasTokenInfoRequested mustBe true
-    wasTokenRefreshed mustBe false
+    
     status(result) mustBe SEE_OTHER
     checkTargetPath(result)
     session(result).get(OAuth2Constants.SESSION_KEY_STATE) mustNot be(None)

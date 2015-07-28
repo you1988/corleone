@@ -62,7 +62,7 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
       .withAuth(credentials.clientId, credentials.clientSecret, WSAuthScheme.BASIC)
       .withRequestTimeout(OAuth2Constants.requestTimeout)
       .post(payload)
-
+    
     val response = Await.result(futureResponse, Duration(5L, SECONDS))
 
     // if response was not successful, the reason might be stale credentials. So we invalidate the cache and try it again
