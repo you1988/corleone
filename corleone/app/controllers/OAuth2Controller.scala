@@ -57,31 +57,28 @@ class OAuth2Controller @Inject()(oauth2: OAuth2Helper, credentialsProvider: OAut
         val stateReceivedByCallbackOption = request.getQueryString("state")
         val stateInSessionOption = request.session.get(OAuth2Constants.SESSION_KEY_STATE)
 
-        if (stateReceivedByCallbackOption.isEmpty)
-          Future(handleError("Did not receive any OAUTH2 state from callback", BAD_REQUEST))
-        else if (stateInSessionOption.isEmpty)
-          Future(handleError("Could not find OAUTH2 state from session", BAD_REQUEST))
-        else {
+        
+        (stateReceivedByCallbackOption, stateInSessionOption) match {
 
-
-          val stateReceivedByCallback = stateReceivedByCallbackOption.get
-          val stateInSession = stateInSessionOption.get
-
-          // check for possible CSRF attack
-          if (stateReceivedByCallback == stateInSession) {
-
-            val codeReceivedByCallbackOption = request.getQueryString("code")
-            if (codeReceivedByCallbackOption.isEmpty) {
-              Future(handleError("Did not receive OAUTH2 code from callback", BAD_REQUEST))
-            }
-            else {
-              // finally, request access token with the code delivered via the callback performed by the authorization server
-              val futureResponse = oauth2.requestAccessToken(codeReceivedByCallbackOption.get)
-              futureResponse.flatMap { response => processAccessTokenRequestResponse(response, originalRequest) }
-            }
-          }
-          else {
-            Future(handleError("OAUTH2 state in session does not match state received from callback", CONFLICT))
+          case (None, None)       => Future(handleError("Did not receive any OAUTH2 state from callback or from session", BAD_REQUEST))
+          case (None, Some(_))    => Future(handleError("Did not receive any OAUTH2 state from callback", BAD_REQUEST))
+          case (Some(_), None)    => Future(handleError("Could not find OAUTH2 state from session", BAD_REQUEST))
+          case (Some(stateReceivedByCallback), Some(stateInSession)) => {
+              // check for possible CSRF attack
+              if (stateReceivedByCallback == stateInSession) {
+                val codeReceivedByCallbackOption = request.getQueryString("code")
+                if (codeReceivedByCallbackOption.isEmpty) {
+                  Future(handleError("Did not receive OAUTH2 code from callback", BAD_REQUEST))
+                }
+                else {
+                  // finally, request access token with the code delivered via the callback performed by the authorization server
+                  val futureResponse = oauth2.requestAccessToken(codeReceivedByCallbackOption.get)
+                  futureResponse.flatMap { response => processAccessTokenRequestResponse(response, originalRequest) }
+                }
+              }
+              else {
+                Future(handleError("OAUTH2 state in session does not match state received from callback", CONFLICT))
+              }
           }
         }
       }

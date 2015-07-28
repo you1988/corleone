@@ -123,7 +123,7 @@ class OAuth2Filter @Inject()(oauth2: OAuth2Helper) extends Filter {
         }
         else {
           val newAccessToken = newAccessTokenOption.get
-          val newRefreshToken = (accessTokenRefreshResponse.json \ "refresh_token").asOpt[String]
+          val newRefreshTokenOption = (accessTokenRefreshResponse.json \ "refresh_token").asOpt[String]
 
           // NOTE: an access token refresh request might deliver a new refresh token. if so, we must use the
           // new one for the next refresh
@@ -139,19 +139,18 @@ class OAuth2Filter @Inject()(oauth2: OAuth2Helper) extends Filter {
 
 
           nextFilter(requestHeader).map { result =>
-            if (newRefreshToken.isEmpty) {
+            newRefreshTokenOption.map{ newRefreshToken =>
+                val sessionData: List[(String, String)] = otherSessionData :::
+                  List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
+                    (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, newRefreshToken))
+  
+                result.withSession(sessionData: _*)
+                  .withCookies(cookies: _*)
+                  .withHeaders(requestHeader.headers.headers: _*)
+            }.getOrElse {
               val sessionData: List[(String, String)] = otherSessionData :::
                 List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
-                     (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken))
-
-              result.withSession(sessionData: _*)
-                .withCookies(cookies: _*)
-                .withHeaders(requestHeader.headers.headers: _*)
-            }
-            else {
-              val sessionData: List[(String, String)] = otherSessionData :::
-                List((OAuth2Constants.SESSION_KEY_ACCESS_TOKEN, newAccessToken),
-                     (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, newRefreshToken.get))
+                  (OAuth2Constants.SESSION_KEY_REFRESH_TOKEN, refreshToken))
 
               result.withSession(sessionData: _*)
                 .withCookies(cookies: _*)
