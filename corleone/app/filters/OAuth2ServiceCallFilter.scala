@@ -44,62 +44,68 @@ class OAuth2ServiceCallFilter @Inject()(oauth2: OAuth2Helper) extends Filter {
   override def apply(nextFilter: RequestHeader => Future[Result])
                     (requestHeader: RequestHeader): Future[Result] = {
 
-    if (!OAuth2Constants.isOAuth2Enabled) return nextFilter.apply(requestHeader)
+    if (OAuth2Constants.isOAuth2Enabled) {
+      if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2ServiceCallFilter for path " + requestHeader.path)
 
-    if (Logger.isDebugEnabled) Logger.debug("Entered OAuth2ServiceCallFilter for path " + requestHeader.path)
-
-    // filter focuses on OAUTH2 validation for services only
-    val pathMatcher = (entry: String) => requestHeader.path.startsWith(entry)
-    if (SERVICE_PATH.find(pathMatcher).isEmpty &&
-      customServicePaths.find(pathMatcher).isEmpty)
-      nextFilter.apply(requestHeader)
-    else {
-      if (Logger.isDebugEnabled) Logger.debug("OAuth2ServiceCallFilter is executed for path " + requestHeader.path)
-
-      val authHeaderOption = requestHeader.headers.get(AUTHORIZATION_HEADER)
-      val authHeader = authHeaderOption.getOrElse(NO_AUTH_HEADER)
-
-      if (authHeader == NO_AUTH_HEADER) {
-        Logger.info("No Authorization header was supplied -> respond with BAD_REQUEST (400)")
-        Future[Result](Results.BadRequest("no authorization header provided in request"))
-      }
+      // filter focuses on OAUTH2 validation for services only
+      val pathMatcher = (entry: String) => requestHeader.path.startsWith(entry)
+      if (SERVICE_PATH.find(pathMatcher).isEmpty && customServicePaths.find(pathMatcher).isEmpty)
+        nextFilter.apply(requestHeader)
       else {
-        val accessToken = authHeader match {
-          case headerTokenRegex(bearer, token) => token
-          case _ => NO_TOKEN
-        }
+        if (Logger.isDebugEnabled) Logger.debug("OAuth2ServiceCallFilter is executed for path " + requestHeader.path)
 
-        if (accessToken == NO_TOKEN) {
-          Logger.info("Authorization header does not contain any access token -> respond with BAD_REQUEST (400)")
-          Future[Result](Results.BadRequest("Authorization header does not contain any access token"))
+        val authHeaderOption = requestHeader.headers.get(AUTHORIZATION_HEADER)
+        val authHeader = authHeaderOption.getOrElse(NO_AUTH_HEADER)
+
+        if (authHeader == NO_AUTH_HEADER) {
+          Logger.info("No Authorization header was supplied -> respond with BAD_REQUEST (400)")
+          Future[Result](Results.BadRequest("no authorization header provided in request"))
         }
         else {
-          val tokenInfoResponseFuture = oauth2.requestTokenInfo(accessToken)
+          val accessToken = authHeader match {
+            case headerTokenRegex(bearer, token) => token
+            case _ => NO_TOKEN
+          }
 
-          tokenInfoResponseFuture flatMap { tokenInfoResponse =>
-            if (!isAccessGranted(tokenInfoResponse)) {
-              Logger.info("access is not granted -> respond with Forbidden (403)")
-              Future[Result](Results.Forbidden("access is not granted"))
+          if (accessToken == NO_TOKEN) {
+            Logger.info("Authorization header does not contain any access token -> respond with BAD_REQUEST (400)")
+            Future[Result](Results.BadRequest("Authorization header does not contain any access token"))
+          }
+          else {
+            val tokenInfoResponseFuture = oauth2.requestTokenInfo(accessToken)
+
+            tokenInfoResponseFuture flatMap { tokenInfoResponse =>
+              processTokenInfo(nextFilter, requestHeader, tokenInfoResponse)
             }
-            else {
-              Logger.info("supplied access token IS valid and access is granted")
-
-              // apply filter following in filter chain
-              nextFilter(requestHeader).map { result =>
-                result.withSession(requestHeader.session)
-                  .withCookies(requestHeader.cookies.toList: _*)
-                  .withHeaders(requestHeader.headers.headers: _*)
-              }
-            }
-
           }
         }
       }
     }
+    else {
+      nextFilter.apply(requestHeader)
+    }
   }
 
 
-  def isAccessGranted(response: WSResponse): Boolean = {
+  private def processTokenInfo(nextFilter: RequestHeader => Future[Result], requestHeader: RequestHeader, tokenInfoResponse: WSResponse): Future[Result] = {
+    if (isAccessGranted(tokenInfoResponse)) {
+      Logger.info("supplied access token IS valid and access is granted")
+
+      // apply filter following in filter chain
+      nextFilter(requestHeader).map { result =>
+        result.withSession(requestHeader.session)
+          .withCookies(requestHeader.cookies.toList: _*)
+          .withHeaders(requestHeader.headers.headers: _*)
+      }
+    }
+    else {
+      Logger.info("access is not granted -> respond with Forbidden (403)")
+      Future[Result](Results.Forbidden("access is not granted"))
+    }
+  }
+
+
+  private def isAccessGranted(response: WSResponse): Boolean = {
     // token is still valid. now. let's check if user has sufficient scopes 
     if (response.status == Status.OK) {
       // at the moment, we can only check if the user is an employee. In the future, it will be possible to assign
