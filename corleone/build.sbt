@@ -87,3 +87,19 @@ dockerCommands += Cmd("ADD", "/opt/docker/scm-source.json / ")
 // application execution
 dockerCommands += Cmd("ENTRYPOINT", "bin/corleone")
 dockerCommands += Cmd("CMD", "")
+
+
+// Flyway magic
+Seq(flywaySettings: _*)
+
+flywayUrl  := "jdbc:postgresql://localhost:5432/translation_service_db"
+
+flywayUser := "postgres"
+
+flywayPassword := "postgres"
+
+flywaySchemas := Seq("ts_data")
+
+flywayTable := "ts_data_history"
+
+flywayLocations := Seq("filesystem:conf/db/db_diff")

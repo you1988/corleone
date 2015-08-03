@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 read -p "Insert database: " db
 read -p "Insert port: " pt
-psql --host=$db --port=$pt --username=postgres << EOF
+read -p "Insert username: " us
+psql --host=$db --port=$pt --username=us << EOF
     BEGIN;
         ALTER ROLE postgres
         CREATE LANGUAGE plpythonu;

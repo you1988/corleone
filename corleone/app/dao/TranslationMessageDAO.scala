@@ -1,12 +1,13 @@
 import helpers.PostgresDriverExtended.api._
-import models.{TranslationKeyTable, TranslationMessageTable, TranslationKey, TranslationMessage}
+import models.Tables.TranslationMessageTable
+import models._
 
 import scala.concurrent.Future
 
 class TranslationMessageDAO{
   
-  private val translationMessageTable = TableQuery[TranslationMessageTable]
-  private val translationKeyTable = TableQuery[TranslationKeyTable]
+  private val translationMessageTable = Tables.translationMessage
+  private val translationKeyTable = Tables.translationKey
   private def db: Database = Database.forConfig("slick.dbs.default")
   
   private def filterValueActive(value: String): Query[TranslationMessageTable, TranslationMessage, Seq] = translationMessageTable.filter(x => x.value === value && x.isActive === true)

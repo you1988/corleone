@@ -1,6 +1,7 @@
 package dao
 
 import helpers.PostgresDriverExtended.api._
+import models.Tables.TagTable
 import models._
 
 import scala.concurrent.Future

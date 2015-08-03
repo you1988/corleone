@@ -4,6 +4,7 @@ CREATE TABLE ts_data.translation_key (
   "tk_is_active" BOOLEAN NOT NULL,
   "tk_created" TIMESTAMP WITHOUT TIME ZONE DEFAULT CLOCK_TIMESTAMP()
 );
+
 CREATE UNIQUE INDEX ON ts_data.translation_key (tk_name, tk_is_active)
   WHERE tk_is_active;
 
@@ -19,7 +20,7 @@ CREATE TABLE ts_data.translation_message (
   "tm_created" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CLOCK_TIMESTAMP()
 );
 
-CREATE UNIQUE INDEX ON ts_data.translation_message(tm_translation_key_id, tm_locale, tm_is_active)
+CREATE UNIQUE INDEX ON ts_data.translation_message(tm_translation_key_id, tm_language_code, tm_is_active)
   WHERE tm_is_active;
 
 CREATE TYPE ts_data.operation as ENUM('MODIFIED','DELETED');
