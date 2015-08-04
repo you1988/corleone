@@ -18,7 +18,7 @@ Corleone is an application build using Play Framework Architecture. It provides 
 (https://stash.zalando.net/users/bfriedrich/repos/translation-service-api/browse/translation-service-api.yml?at=refs%2Fheads%2Fapi-definition)
 in which users will be able to introduce their own set of translations.
 
-![Architecture overview] (https://drive.google.com/file/d/0ByswMdi87hHiV29oeG1QZXBwMGc/view?usp=sharing)
+![Architecture overview] (https://github.com/zalando/corleone/blob/setup_db/corleone/Documentation/Corleone%20Architecture.jpg)
 
 ## Storage
 
