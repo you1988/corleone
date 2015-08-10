@@ -5,6 +5,8 @@ version := "1.0-SNAPSHOT"
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 scalaVersion := "2.11.6"
+routesImport += "binders.Binders._"
+
 
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
@@ -26,6 +28,9 @@ libraryDependencies ++= Seq(
   specs2 % Test,
   filters,
   "org.webjars"  % "bootstrap"    % "3.3.5",
+  "com.google.inject" % "guice" % "4.0-beta",
+  "com.tzavellas" % "sse-guice" % "0.7.1",
+  "org.scalatestplus" %% "play" % "1.1.0" % "test",
   "org.webjars"  % "jquery"       % "2.1.4",
   "org.webjars"  % "jquery-ui"    % "1.11.4",
   "org.webjars" %% "webjars-play" % "2.4.0-1",
@@ -33,6 +38,7 @@ libraryDependencies ++= Seq(
    "org.scalatest"     %% "scalatest" % "2.2.1"   % "test",
    "org.scalatestplus" %% "play"      % "1.4.0-M3" % "test"
 )
+
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
@@ -87,3 +93,5 @@ dockerCommands += Cmd("ADD", "/opt/docker/scm-source.json / ")
 // application execution
 dockerCommands += Cmd("ENTRYPOINT", "bin/corleone")
 dockerCommands += Cmd("CMD", "")
+
+
