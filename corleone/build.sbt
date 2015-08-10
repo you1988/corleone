@@ -30,11 +30,9 @@ libraryDependencies ++= Seq(
   "org.webjars"  % "bootstrap"    % "3.3.5",
   "com.google.inject" % "guice" % "4.0-beta",
   "com.tzavellas" % "sse-guice" % "0.7.1",
-  "org.scalatestplus" %% "play" % "1.1.0" % "test",
   "org.webjars"  % "jquery"       % "2.1.4",
   "org.webjars"  % "jquery-ui"    % "1.11.4",
   "org.webjars" %% "webjars-play" % "2.4.0-1",
-
    "org.scalatest"     %% "scalatest" % "2.2.1"   % "test",
    "org.scalatestplus" %% "play"      % "1.4.0-M3" % "test"
 )

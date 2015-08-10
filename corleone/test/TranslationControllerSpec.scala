@@ -22,13 +22,18 @@ import play.api.libs.json._
 object TranslationControllerSpec extends Specification with Mockito {
 
   "GET action: Information fetched successfully" in {
+        val msgConstants = Seq[MessageConstant.MessageConstant](MessageConstant.MessageConstant("outbound_pack_message", "versidonsd", Seq[String]("test"), Seq[Translation.Translation](Translation.Translation("en","pack"))))
+
     val m = smartMock[TranslationManage]
-    m.getTranslationMessage(Some(Seq[String]("en")), None, None, None, None) returns Response.MsgConstntsResponse(Seq.empty[MessageConstant.MessageConstant],0);
-    val result = new TranslationService(m).getTranslaions(Some(Seq[String]("en")), None, None, None, None)(FakeRequest())
+    m.getTranslationMessage(Some(Seq[String]("en")), None, Some(1000), None, None) returns Response.MsgConstntsResponse(msgConstants,0);
+    val result = new TranslationService(m).getTranslaions(Some(Seq[String]("en")), None, Some(1000), None, None)(FakeRequest())
     status(result) must equalTo(OK)
     contentType(result) must beSome("application/json")
     charset(result) must beSome("utf-8")
-    contentAsString(result) must contain("{\"messageConstants\":[],\"_links\":[]}")
+    contentAsString(result) must contain(Json.toJson(msgConstants).toString())
+    headers(result).toString() must contain("X-Remainder-Count -> 0")
+    headers(result).toString() must contain("ETag -> 1d2af1b196eb987c0a8ae84af94cea3b695e4fee")
+    headers(result).toString() must contain("Cache-Control -> max-age=3600")
   }
   "GET action: Translation messages not modified" in {
     val msgConstants = Seq[MessageConstant.MessageConstant](MessageConstant.MessageConstant("outbound_pack_message", "versidonsd", Seq[String]("test"), Seq[Translation.Translation]()))
