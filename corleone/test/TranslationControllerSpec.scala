@@ -16,13 +16,14 @@ import models.Link
 import models.Translation
 import services.TranslationManage
 import models.Error
+import models.Response
 import play.api.libs.json._
 @RunWith(classOf[JUnitRunner])
 object TranslationControllerSpec extends Specification with Mockito {
 
   "GET action: Information fetched successfully" in {
     val m = smartMock[TranslationManage]
-    m.getTranslationMessage(Some(Seq[String]("en")), None, None, None, None) returns Seq.empty[MessageConstant.MessageConstant];
+    m.getTranslationMessage(Some(Seq[String]("en")), None, None, None, None) returns Response.MsgConstntsResponse(Seq.empty[MessageConstant.MessageConstant],0);
     val result = new TranslationService(m).getTranslaions(Some(Seq[String]("en")), None, None, None, None)(FakeRequest())
     status(result) must equalTo(OK)
     contentType(result) must beSome("application/json")
@@ -32,7 +33,7 @@ object TranslationControllerSpec extends Specification with Mockito {
   "GET action: Translation messages not modified" in {
     val msgConstants = Seq[MessageConstant.MessageConstant](MessageConstant.MessageConstant("outbound_pack_message", "versidonsd", Seq[String]("test"), Seq[Translation.Translation]()))
     val m = smartMock[TranslationManage]
-    m.getTranslationMessage(Some(Seq[String]("en")), None, None, None, None) returns msgConstants;
+    m.getTranslationMessage(Some(Seq[String]("en")), None, None, None, None) returns Response.MsgConstntsResponse(msgConstants,100);
     val hash = Codecs.sha1((msgConstants).toString());
     val result = new TranslationService(m).getTranslaions(Some(Seq[String]("en")), None, None, None, None)(FakeRequest().withHeaders(IF_NONE_MATCH -> hash))
     status(result) must equalTo(NOT_MODIFIED)
@@ -41,7 +42,7 @@ object TranslationControllerSpec extends Specification with Mockito {
   "GET action: Bad query parameters" in {
     val msgConstants = Seq[MessageConstant.MessageConstant](MessageConstant.MessageConstant("outbound_pack_message", "versidonsd", Seq[String]("test"), Seq[Translation.Translation]()))
     val m = smartMock[TranslationManage]
-    m.getTranslationMessage(Some(Seq[String]("en-br")), None, None, None, None) returns msgConstants;
+    m.getTranslationMessage(Some(Seq[String]("en-br")), None, None, None, None) returns Response.MsgConstntsResponse(msgConstants,100);
     val hash = Codecs.sha1((msgConstants).toString());
     val result = new TranslationService(m).getTranslaions(Some(Seq[String]("en-br")), None, None, None, None)(FakeRequest(GET, "/translations"))
     status(result) must equalTo(BAD_REQUEST)

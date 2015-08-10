@@ -26,14 +26,18 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
       Helper.validateLanguageCodes(languageCodes) match {
         case Some(error) => Status(400)(Json.toJson(Error.Error(request.uri, 400, error.title, error.detail, request.uri, error._links)))
         case None =>
-          val msgConstants = translationManager.getTranslationMessage(languageCodes, tags, limit, after, before);
+          val response = translationManager.getTranslationMessage(languageCodes, tags, limit, after, before);
+          val msgConstants = response.messageConstants
           val hATEOAS = Helper.getHATEOAS(request.method, msgConstants, request.host);
           val messageConstantHash = Codecs.sha1((msgConstants).toString());
           request.headers.get(IF_NONE_MATCH).collect {
             case value if (messageConstantHash.equals(value)) => NotModified
-          } getOrElse Ok(Json.toJson(Response.SearchResponse(msgConstants, hATEOAS))).withHeaders(
-            CACHE_CONTROL -> "max-age=36",
-            ETAG -> messageConstantHash)
+          } getOrElse {
+            Ok(Json.toJson(Response.SearchResponse(msgConstants, hATEOAS))).withHeaders(
+            CACHE_CONTROL -> "max-age=3600",
+            ETAG -> messageConstantHash,
+            "X-Remainder-Count"->(if(response.count<limit.get) 0 else response.count-limit.get).toString())
+          }
         }
       }
   }
@@ -78,7 +82,7 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
               request.headers.get(IF_NONE_MATCH).collect {
                 case value if (hash.equals(value)) => NotModified
               } getOrElse Ok(Json.toJson(Response.MessageConstantResponse(msg, hATEOAS))).withHeaders(
-                CACHE_CONTROL -> "max-age=36",
+                CACHE_CONTROL -> "max-age=3600",
                 ETAG -> hash)
             }
           }
@@ -101,7 +105,7 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
                   val hATEOAS = Helper.getHATEOAS(request.method, Seq[MessageConstant.MessageConstant](messageConstant), request.host);
                   val messageConstantCreatedHash = Codecs.sha1((messageConstant).toString());
                   Status(204)(Json.toJson(hATEOAS)).withHeaders(
-                    CACHE_CONTROL -> "max-age=36",
+                    CACHE_CONTROL -> "max-age=3600",
                     ETAG -> messageConstantCreatedHash)
                 }
               }
@@ -119,7 +123,7 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
                       val messageConstantUpdatedHash = Codecs.sha1(messageConstant.toString());
 
                       Status(204)(Json.toJson(hATEOAS)).withHeaders(
-                        CACHE_CONTROL -> "max-age=36",
+                        CACHE_CONTROL -> "max-age=3600",
                         ETAG -> messageConstantUpdatedHash)
                     }
                   }
@@ -159,7 +163,7 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
                       }
                       val hATEOAS = Helper.getHATEOAS(request.method, Seq[MessageConstant.MessageConstant](messageConstant), request.host);
                       Ok(Json.toJson(hATEOAS)).withHeaders(
-                        CACHE_CONTROL -> "max-age=36",
+                        CACHE_CONTROL -> "max-age=3600",
                         ETAG -> messageConstantUpdatedHash)
                     }
                   }

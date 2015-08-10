@@ -7,7 +7,7 @@ import models.Response
 
 
 class TranslationManageImpl extends TranslationManage {
-  def getTranslationMessage(languageCodes: Option[Seq[String]], tags: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Seq[MessageConstant.MessageConstant] = {
+  def getTranslationMessage(languageCodes: Option[Seq[String]], tags: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Response.MsgConstntsResponse= {
     throw new NotImplementedError()
   }
   def getIfExist(key: String, languages: Seq[String]): Option[MessageConstant.MessageConstant] = {

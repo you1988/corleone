@@ -22,4 +22,6 @@ object Response {
 
   case class InternResponse(messageConstant: Option[MessageConstant.MessageConstant], shortError: Option[Error.ShortError])
 
+  case class MsgConstntsResponse(messageConstants: Seq[MessageConstant.MessageConstant], count: Integer)
+
 }

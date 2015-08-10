@@ -10,7 +10,7 @@ GET        /heartbeat              controllers.HealthCheckController.heartbeat
 GET        /oauth_callback         controllers.OAuth2Controller.callback
 
 #Corleone service 
-GET     /translations               @controllers.TranslationService.getTranslaions(languageCodes:Option[Seq[String]],tags:Option[Seq[String]],limit:Option[Integer],after:Option[String],before:Option[String])
+GET     /translations               @controllers.TranslationService.getTranslaions(languageCodes:Option[Seq[String]],tags:Option[Seq[String]],limit:Option[Integer]=Some(1000),after:Option[String],before:Option[String])
 POST    /translations               @controllers.TranslationService.createTranslaions()
 GET     /translations/:key          @controllers.TranslationService.getTranslation(key:String,languageCodes:Option[Seq[String]])
 DELETE  /translations/:key          @controllers.TranslationService.deleteTranslation(key:String)
