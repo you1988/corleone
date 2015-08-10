@@ -22,21 +22,21 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
   def getTranslaions(languageCodes: Option[Seq[String]], tags: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]) = Action {
     request =>
       {
-      Helper.validateLanguageCodes(languageCodes) match {
-        case Some(error) => Status(400)(Json.toJson(Error.Error(request.uri, 400, error.title, error.detail, request.uri, error._links)))
-        case None =>
-          val response = translationManager.getTranslationMessage(languageCodes, tags, limit, after, before);
-          val msgConstants = response.messageConstants
-          val hATEOAS = Helper.getHATEOAS(request.method, msgConstants, request.host);
-          val messageConstantHash = Codecs.sha1((msgConstants).toString());
-          request.headers.get(IF_NONE_MATCH).collect {
-            case value if (messageConstantHash.equals(value)) => NotModified
-          } getOrElse {
-            Ok(Json.toJson(Response.SearchResponse(msgConstants, hATEOAS))).withHeaders(
-            CACHE_CONTROL -> "max-age=3600",
-            ETAG -> messageConstantHash,
-            "X-Remainder-Count"->(if(response.count<limit.get) 0 else response.count-limit.get).toString())
-          }
+        Helper.validateLanguageCodes(languageCodes) match {
+          case Some(error) => Status(400)(Json.toJson(Error.Error(request.uri, 400, error.title, error.detail, request.uri, error._links)))
+          case None =>
+            val response = translationManager.getTranslationMessage(languageCodes, tags, limit, after, before);
+            val msgConstants = response.messageConstants
+            val hATEOAS = Helper.getHATEOAS(request.method, msgConstants, request.host);
+            val messageConstantHash = Codecs.sha1((msgConstants).toString());
+            request.headers.get(IF_NONE_MATCH).collect {
+              case value if (messageConstantHash.equals(value)) => NotModified
+            } getOrElse {
+              Ok(Json.toJson(Response.SearchResponse(msgConstants, hATEOAS))).withHeaders(
+                CACHE_CONTROL -> "max-age=3600",
+                ETAG -> messageConstantHash,
+                "X-Remainder-Count" -> (if (response.count < limit.get) 0 else response.count - limit.get).toString())
+            }
         }
       }
   }
@@ -96,37 +96,13 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
           val messageConstant = s.get
           val result = translationManager.getIfExistWithKey(key);
           result match {
-            case None =>
-              val error = translationManager.createMessageConstant(messageConstant);
-              error match {
-                case Some(er) => Status(422)(Json.toJson(Error.Error(request.uri, 422, er.title, er.detail, "test", er._links)))
-                case None => {
-                  val hATEOAS = Helper.getHATEOAS(request.method, Seq[MessageConstant.MessageConstant](messageConstant), request.host);
-                  val messageConstantCreatedHash = Codecs.sha1((messageConstant).toString());
-                  Status(204)(Json.toJson(hATEOAS)).withHeaders(
-                    CACHE_CONTROL -> "max-age=3600",
-                    ETAG -> messageConstantCreatedHash)
-                }
-              }
+            case None =>executeAction(key,messageConstant,request,translationManager.createMessageConstant,handlePutSucces,handleUpdateUnSucces)
             case Some(msg) => {
               val msgConstants = Seq[MessageConstant.MessageConstant](msg);
               val hATEOAS = Helper.getHATEOAS(request.method, msgConstants, request.host);
               val currentMsgStateHash = Codecs.sha1(msg.toString());
               request.headers.get(IF_NONE_MATCH).collect {
-                case value if (currentMsgStateHash.equals(value)) => {
-                  val error = translationManager.updateMessageConstant(messageConstant);
-                  error match {
-                    case Some(er) => Status(422)(Json.toJson(Error.Error(request.uri, 422, er.title, er.detail, "test", er._links)))
-                    case None => {
-                      val hATEOAS = Helper.getHATEOAS(request.method, Seq[MessageConstant.MessageConstant](messageConstant), request.host);
-                      val messageConstantUpdatedHash = Codecs.sha1(messageConstant.toString());
-
-                      Status(204)(Json.toJson(hATEOAS)).withHeaders(
-                        CACHE_CONTROL -> "max-age=3600",
-                        ETAG -> messageConstantUpdatedHash)
-                    }
-                  }
-                }
+                case value if (currentMsgStateHash.equals(value)) => executeAction(key, messageConstant, request, translationManager.updateMessageConstant, handlePutSucces, handleUpdateUnSucces)
               } getOrElse Status(412)(Json.toJson(Response.MessageConstantResponse(msg, hATEOAS))).withHeaders(
                 CACHE_CONTROL -> "max-age=36",
                 ETAG -> currentMsgStateHash)
@@ -150,23 +126,7 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
               val hATEOAS = Helper.getHATEOAS(request.method, msgConstants, request.host);
               var hash = Codecs.sha1(message.toString());
               request.headers.get(IF_NONE_MATCH).collect {
-                case value if (hash.equals(value)) => {
-                  val error = translationManager.updateMessageConstant(messageConstant);
-                  error match {
-                    case Some(er) => Status(422)(Json.toJson(Error.Error(request.uri, 422, er.title, er.detail, request.uri, er._links)))
-                    case None => {
-                      var messageConstantUpdatedHash = ""
-                      translationManager.getIfExistWithKey(key) match {
-                        case None                 => messageConstantUpdatedHash = ""
-                        case Some(messageUpdated) => messageConstantUpdatedHash = Codecs.sha1(messageUpdated.toString());
-                      }
-                      val hATEOAS = Helper.getHATEOAS(request.method, Seq[MessageConstant.MessageConstant](messageConstant), request.host);
-                      Ok(Json.toJson(hATEOAS)).withHeaders(
-                        CACHE_CONTROL -> "max-age=3600",
-                        ETAG -> messageConstantUpdatedHash)
-                    }
-                  }
-                }
+                case value if (hash.equals(value)) =>executeAction(key, messageConstant, request, translationManager.updateMessageConstant, handleUpdateSucces, handleUpdateUnSucces)
               } getOrElse Status(412)(Json.toJson(Response.MessageConstantResponse(message, hATEOAS))).withHeaders(
                 CACHE_CONTROL -> "max-age=36",
                 ETAG -> hash)
@@ -175,7 +135,7 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
         }
       }
   }
- 
+
   def deleteTranslation(key: String) = Action {
     request =>
       val result = translationManager.getIfExistWithKey(key);
@@ -187,5 +147,37 @@ class TranslationService @Inject() (translationManager: TranslationManage) exten
           Status(204)(Json.toJson(hATEOAS))
         }
       }
+  }
+  def handlePutSucces(key: String, method: String, host: String): Result = {
+    val messageConstantUpdatedHash =
+      translationManager.getIfExistWithKey(key) match {
+        case None                 => ("", Seq[MessageConstant.MessageConstant]())
+        case Some(messageUpdated) => (Codecs.sha1(messageUpdated.toString()), Seq[MessageConstant.MessageConstant](messageUpdated));
+      }
+    val hATEOAS = Helper.getHATEOAS(method, messageConstantUpdatedHash._2, host);
+    Status(204)(Json.toJson(hATEOAS)).withHeaders(
+      CACHE_CONTROL -> "max-age=3600",
+      ETAG -> messageConstantUpdatedHash._1)
+  }
+  def handleUpdateSucces(key: String, method: String, host: String): Result = {
+    val messageConstantUpdatedHash =
+      translationManager.getIfExistWithKey(key) match {
+        case None                 => ("", Seq[MessageConstant.MessageConstant]())
+        case Some(messageUpdated) => (Codecs.sha1(messageUpdated.toString()), Seq[MessageConstant.MessageConstant](messageUpdated));
+      }
+    val hATEOAS = Helper.getHATEOAS(method, messageConstantUpdatedHash._2, host);
+    Ok(Json.toJson(hATEOAS)).withHeaders(
+      CACHE_CONTROL -> "max-age=3600",
+      ETAG -> messageConstantUpdatedHash._1)
+  }
+  def handleUpdateUnSucces(request: Request[JsValue], er: Error.ShortError): Result = {
+    Status(422)(Json.toJson(Error.Error(request.uri, 422, er.title, er.detail, request.uri, er._links)))
+  }
+  def executeAction(key: String, msg: MessageConstant.MessageConstant, request: Request[JsValue], action: (MessageConstant.MessageConstant) => Option[Error.ShortError], handlerSucces: (String, String, String) => Result, handlerError: (Request[JsValue], Error.ShortError) => Result): Result = {
+    action(msg) match {
+      case None      => handlerSucces(key, request.method, request.host)
+      case Some(err) => handlerError(request, err)
     }
   }
+
+}
