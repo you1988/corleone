@@ -99,17 +99,7 @@ object TranslationControllerSpec extends Specification with Mockito {
     status(result) must equalTo(422)
   }
 
-  "Put action : new message constant" in {
-    val msgConstant = MessageConstant.MessageConstant("outbound_pack_message", "versidonsd", Seq[String]("test"), Seq[Translation.Translation](Translation.Translation("en", "Bad Packer"), Translation.Translation("en-GB", "Cool Packer")))
-   val fakeTranslationManager= smartMock[TranslationManage]
-    fakeTranslationManager.createMessageConstant(msgConstant) returns None
-    fakeTranslationManager.getIfExistWithKey("outbound_pack_message") returns None
-    val json = Json.toJson(msgConstant);
-    val req = FakeRequest(method = "PUT", uri = "/translations:outbound_pack_message", headers = FakeHeaders().add("Content-type" -> "application/json"), body = json)
-    val result = new TranslationService(fakeTranslationManager).putTranslation("outbound_pack_message")(req)
-    status(result) must equalTo(204)
-    contentAsString(result) must contain("[{\"rel\":\"delet\",\"href\":\"/translations/outbound_pack_message\"},{\"rel\":\"update\",\"href\":\"/translations/outbound_pack_message\"},{\"rel\":\"patch\",\"href\":\"/translations/outbound_pack_message\"},{\"rel\":\"get\",\"href\":\"/translations/outbound_pack_message\"}]")
-  }
+ 
   "Put action: update message" in {
     val msgConstantNew = MessageConstant.MessageConstant("outbound_pack_message", "versidonsd", Seq[String]("test"), Seq[Translation.Translation]())
     val msgConstantold = MessageConstant.MessageConstant("outbound_pack_message", "versidonsd", Seq[String]("test"), Seq[Translation.Translation](Translation.Translation("en", "Bad Packer"), Translation.Translation("en-GB", "Cool Packer")))
