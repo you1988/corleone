@@ -22,7 +22,6 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  jdbc,
   cache,
   ws,
   specs2 % Test,
@@ -30,6 +29,10 @@ libraryDependencies ++= Seq(
   "org.webjars"  % "bootstrap"    % "3.3.5",
   "com.google.inject" % "guice" % "4.0-beta",
   "com.tzavellas" % "sse-guice" % "0.7.1",
+  "com.typesafe.slick" %% "slick" % "3.0.0",
+  "com.zaxxer" % "HikariCP-java6" % "2.3.3",
+  "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+  "com.github.tminglei" %% "slick-pg" % "0.9.0",
   "org.webjars"  % "jquery"       % "2.1.4",
   "org.webjars"  % "jquery-ui"    % "1.11.4",
   "org.webjars" %% "webjars-play" % "2.4.0-1",
@@ -93,3 +96,17 @@ dockerCommands += Cmd("ENTRYPOINT", "bin/corleone")
 dockerCommands += Cmd("CMD", "")
 
 
+// Flyway magic
+Seq(flywaySettings: _*)
+
+flywayUrl  := "jdbc:postgresql://localhost:5432/translation_service_db"
+
+flywayUser := "postgres"
+
+flywayPassword := "postgres"
+
+flywaySchemas := Seq("ts_data")
+
+flywayTable := "ts_data_history"
+
+flywayLocations := Seq("filesystem:conf/db/db_diff")
