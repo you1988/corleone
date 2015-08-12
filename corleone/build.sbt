@@ -31,16 +31,19 @@ libraryDependencies ++= Seq(
   "com.github.tminglei" %% "slick-pg" % "0.9.0",
   "org.webjars"  % "jquery"       % "2.1.4",
   "org.webjars"  % "jquery-ui"    % "1.11.4",
-  "org.webjars" %% "webjars-play" % "2.4.0-1"
+  "org.webjars" %% "webjars-play" % "2.4.0-1",
+
+   "org.scalatest"     %% "scalatest" % "2.2.1"   % "test",
+   "org.scalatestplus" %% "play"      % "1.4.0-M3" % "test"
 )
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
+
+
 // Play provides two styles of routers, one expects its actions to be injected, the
 // other, legacy style, accesses its actions statically.
 routesGenerator := InjectedRoutesGenerator
-
-
 
 // generate scm-source.json
 val process = Process("scripts/generate_scm_source.sh")
