@@ -1,0 +1,75 @@
+@* TranslationCreationForm Template File *@
+@(message: domain.TestDomain.MessageConstant )
+	<form action="translations" method="post">
+		<div class="container col-md-12" id="container_search">
+			<div id="generale_information" class="panel panel-success">
+				<div class="panel-heading">General Information</div>
+				<div class="panel-body">
+					<div class="row">
+						<label class="control-label col-md-4" for="translation_key">key:</label>
+						<div class="col-md-8">
+							<span class="form-control" contenteditable="true"
+								id="translation_key"> </span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+
+			<div id="generale_information" class="panel panel-success">
+				<div class="panel-heading">General Information</div>
+				<div class="panel-body">
+					<div class="table-responsive">
+						<table class="table table-striped table-hover table-users">
+							<thead>
+								<tr>
+									<th>Language</th>
+									<th>Translation</th>
+									<th></th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div id="generale_tags" class="panel panel-success">
+				<div class="panel-heading">Tags</div>
+				<div class="panel-body">
+				
+						<div class="row">
+							<label class="control-label col-md-4" for="translation_key">Tags:</label>
+
+							<div class="col-md-8">
+
+								<div class="form-control ttttt" id="span-container">
+									<div id="tags-collector" class="inlin">
+										@message.tags.map { tag => <span class='tm'> &nbsp; <span
+											contenteditable="false" class="label label-success" id="PACK"><input
+												readonly="readonly" class="input-transparent" type="hidden"
+												name='PACK_1' value=" @tag">@tag&nbsp;<span
+												id="test_2" contenteditable="false"
+												class="hover-remove glyphicon glyphicon-remove"
+												onclick="delet(this.id)"> </span> </span>
+										</span> }
+									</div>
+									<div class="inlin">
+										&nbsp <input id="texttest" autocomplete="on"
+											class="autocomplete textttt" type="text" />
+									</div>
+								</div>
+
+							</div>
+
+						</div>
+						<div class="row">
+							<input type="submit" value="Submit as Multipart/form-data">
+						</div>
+				</div>
+			</div>
+		</div>
+							</form>
+		

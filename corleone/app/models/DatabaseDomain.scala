@@ -27,13 +27,13 @@ case class TranslationMessage(id: Option[Long],
 
 object Operations extends Enumeration {
   type Operation = Value
-  val CREED, MODIFIED, DELETED = Value
+  val CREATED, MODIFIED, DELETED = Value
 }
 
 case class Version(id: Option[Long],
                    name: String,
                    translationKeyId: Long,
-                   translationMessageId: Long,
+//                   translationMessageId: Long,
                    performedOperation: Operation,
                    lastApply:Timestamp,
                    created:Timestamp)

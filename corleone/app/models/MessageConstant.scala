@@ -22,7 +22,7 @@ object Translation {
   case class Translation(languageCode: String, message: String)
  val languageCodeValidator: Reads[String] = 
     Reads.StringReads.filter(ValidationError("Invalid Language Code!"))(str => {
-        str.matches("""[a-z]{2}-[A-Z]{2}|[a-z]{2}""")
+        str.matches("""[a-z]{2}-[A-Z]{2}|[A-Z]{2}""")
     })
   implicit val translationWrites: Writes[Translation] = (
     (JsPath \ "languageCode").write[String] and

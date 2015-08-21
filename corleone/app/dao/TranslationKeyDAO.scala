@@ -1,3 +1,4 @@
+package dao
 import models.Tables.TranslationKeyTable
 import models.{TranslationKey, Tables}
 import helpers.PostgresDriverExtended.api._
@@ -6,7 +7,7 @@ import scala.concurrent.Future
 class TranslationKeyDAO{
   
   private val translationKeyTable = Tables.translationKey
-  private def db: Database = Database.forConfig("slick.dbs.default")
+  private def db: Database = Database.forConfig("mydb")
 
   private def filterActiveName(name: String): Query[TranslationKeyTable, TranslationKey, Seq] =
     translationKeyTable.filter(x => x.name === name && x.isActive)

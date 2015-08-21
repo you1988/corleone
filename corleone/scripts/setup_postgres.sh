@@ -2,9 +2,9 @@
 read -p "Insert database: " db
 read -p "Insert port: " pt
 read -p "Insert username: " us
-psql --host=$db --port=$pt --username=us << EOF
+psql --host=$db --port=$pt --username=$us << EOF
     BEGIN;
-        ALTER ROLE postgres
+        ALTER ROLE postgres;
         CREATE LANGUAGE plpythonu;
         SET search_path TO public;
         CREATE AGGREGATE array_agg_cat(anyarray) ( SFUNC=array_cat, STYPE=anyarray, INITCOND='{}' );

@@ -1,0 +1,81 @@
+   .custom-select select {
+        display: inline-block !important;
+        border: 2px solid #bbb !important;
+        padding: 4px 3px 3px 5px !important;
+        margin: 0 !important;
+        font: inherit !important;
+        outline:none !important; /* remove focus ring from Webkit */
+        line-height: 1.2 !important;
+        background: #f8f8f8 !important;
+        
+        -webkit-appearance:none !important; /* remove the strong OSX influence from Webkit */
+        
+        -webkit-border-radius: 6px !important;
+        -moz-border-radius: 6px !important;
+        border-radius: 6px !important;
+    }
+
+    /* for Webkit's CSS-only solution */
+    @media screen and (-webkit-min-device-pixel-ratio:0) { 
+        .custom-select select {
+            padding-right:30px !important;    
+        }
+    }
+    
+    /* Since we removed the default focus styles, we have to add our own */
+    .custom-select select:focus {
+        -webkit-box-shadow: 0 0 3px 1px #c00 !important;
+        -moz-box-shadow: 0 0 3px 1px #c00 !important;
+        box-shadow: 0 0 3px 1px #c00 !important;
+    }
+    
+    /* Select arrow styling */
+    .custom-select:after {
+        content: "▼" !important;
+        position: absolute !important;
+        top: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        font-size: 60% !important;
+        line-height: 30px !important;
+        padding: 0 7px !important;
+        background: #bbb !important;
+        color: white !important;
+        
+        pointer-events:none !important;
+        
+        -webkit-border-radius: 0 6px 6px 0 !important;
+        -moz-border-radius: 0 6px 6px 0 !important;
+        border-radius: 0 6px 6px 0 !important;
+    }
+    
+    .no-pointer-events .custom-select:after {
+        content: none !important;
+    }
+
+/* .selectpicker { */
+/* 	margin-bottom: 0px !important !important; */
+/* 	margin-top: 0px !important !important; */
+/* 	border-radius: 0px !important !important; */
+/* 	white-space: nowrap !important; */
+/* 	background-color: transparent !important !important; */
+/* 	color: inherit !important !important; */
+/* 	background-repeat: no-repeat !important !important; */
+/* 	background-image: none !important !important; */
+/* 	border: none !important !important; */
+/* 	outline: none !important !important; */
+/* 	width: 100% !important !important; */
+/* 	height: 100% !important !important; */
+/* 	overflow: hidden !important !important; */
+/* 	background: url(new_arrow.png) no-repeat right #ddd !important !important; */
+/* } */
+/* .selectpicker select { */
+/*    line-height: 1 !important; */
+/*    border: 0 !important; */
+/*    border-radius: 0 !important; */
+/*    height: 34px !important; */
+/*    -webkit-appearance: none !important; */
+/*    } */
+/* .select-language { */
+	
+/* } */

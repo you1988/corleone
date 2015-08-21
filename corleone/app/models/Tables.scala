@@ -6,6 +6,7 @@ import java.sql.Timestamp
 import helpers.PostgresDriverExtended.api._
 import models.LanguageCodes.LanguageCode
 import models.Operations.Operation
+
 import slick.lifted.Tag
 
 object Tables {
@@ -15,7 +16,8 @@ object Tables {
     def name = column[String]("tk_name")
     def isActive = column[Boolean]("tk_is_active")
     def created = column[Timestamp]("tk_created")
-    def * = (id.?, name, isActive, created) <> (TranslationKey.tupled, TranslationKey.unapply _)
+    def * = (id.?, name, isActive, created) <> (TranslationKey.tupled, TranslationKey.unapply _) 
+    
   }
   val translationKey = TableQuery[TranslationKeyTable]
 
@@ -39,15 +41,15 @@ object Tables {
     def id = column[Long]("v_id", O.PrimaryKey, O.AutoInc)
     def name= column[String]("v_name")
     def translationKeyId = column[Long]("v_translation_key_id")
-    def translationMessageId = column[Long]("v_translation_message_id")
+//    def translationMessageId = column[Long]("v_translation_message_id")
     def performedOperation = column[Operation]("v_performed_operation")
     def lastApply = column[Timestamp]("v_last_apply")
     def created = column[Timestamp]("v_created")
-    def * = (id.?, name, translationKeyId, translationMessageId, performedOperation, lastApply, created) <> (Version.tupled, Version.unapply _)
-  
+    def * = (id.?, name, translationKeyId,  performedOperation, lastApply, created) <> (Version.tupled, Version.unapply _)
+//  translationMessageId,
     def translationKey = foreignKey("version_v_translation_key_id_fkey", translationKeyId, TableQuery[TranslationKeyTable])(_.id)
   
-    def translationMessage = foreignKey("version_v_translation_message_id_fkey", translationMessageId, TableQuery[TranslationMessageTable])(_.id)
+//     def translationMessage = foreignKey("version_v_translation_message_id_fkey", translationMessageId, TableQuery[TranslationMessageTable])(_.id)
   }
   val version = TableQuery[VersionTable]
   
@@ -61,12 +63,12 @@ object Tables {
   
   case class TranslationTaggingTable(tag: Tag) extends Table[TranslationTagging](tag, Some("ts_data"),"translation_tagging"){
     def id = column[Long]("tt_id", O.PrimaryKey, O.AutoInc)
-    def translationKeyId = column[Long]("tt_translation_key_id")
     def tagId = column[Long]("tt_tag_id")
+    def translationKeyId = column[Long]("tt_translation_key_id")
     def isActive = column[Boolean]("tt_is_active")
     def lastModified = column[Timestamp]("tt_last_modified")
     def created = column[Timestamp]("tt_created")
-    def * = (id.?, translationKeyId, tagId, isActive, lastModified, created) <> (TranslationTagging.tupled, TranslationTagging.unapply _)
+    def * = (id.?, tagId, translationKeyId, isActive, lastModified, created) <> (TranslationTagging.tupled, TranslationTagging.unapply _)
 
     def translationKey = foreignKey("translation_tagging_tt_translation_key_id_fkey", translationKeyId, TableQuery[TranslationKeyTable])(_.id)
     def tagHolder = foreignKey("translation_tagging_tt_tag_id_fkey", tagId, TableQuery[TagTable])(_.id)

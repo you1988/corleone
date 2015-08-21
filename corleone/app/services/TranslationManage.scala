@@ -11,13 +11,18 @@ import models.Error
 import models.Response
 
 import com.google.inject.ImplementedBy
-
-trait TranslationManage {
-  def getTranslationMessage(languageCodes: Option[Seq[String]], tags: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Response.MsgConstntsResponse
-  def getIfExist(key: String, languages: Seq[String]): Option[MessageConstant.MessageConstant]
-  def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Option[Error.ShortError]
-  def createMessageConstant(messageConstant: MessageConstant.MessageConstant): Option[Error.ShortError]
-  def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Option[Error.ShortError]
+import scala.concurrent.Future
+trait TranslationManage  {
+  def getTranslationMessage(languageCodes: Option[Seq[String]], tags: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Future[Option[Response.MsgConstntsResponse]]
+  def getIfExist(key: String, languages: Option[Seq[String]]): Future[Option[MessageConstant.MessageConstant]]
+  def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Option[Error.ShortError]]
+  def createMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Option[Error.ShortError]]
+  def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]]
   def deleteMessageConstant(key: String)
-  def getIfExistWithKey(key: String): Option[MessageConstant.MessageConstant]
+  def getIfExistWithKey(key: String): Future[Option[MessageConstant.MessageConstant]]
+  def getIfExistWithTag(key: String): Future[Option[Seq[MessageConstant.MessageConstant]]]
+
+  def getAllTags(): Future[Option[Seq[String]]]
+  def getAllLanguages(): Seq[String]
+  
 }

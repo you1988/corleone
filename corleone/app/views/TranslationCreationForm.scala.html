@@ -1,0 +1,80 @@
+@(languages: Seq[String] )
+<div class="col-md-3 aside"></div>
+<div class="col-md-6 padding-zero">
+	<div>
+
+	<form action="translation" data-toggle="validator"  onsubmit="return validateCreationForm()" id="profileForm" method="post">
+
+		<div class="row creation-component-zero">
+			<div class="col-md-2 creation-label-zero">
+				<label class="control-label creation-control-label">Key:</label>
+			</div>
+			<div class="col-md-10 creation-input-div-zero">
+				<input class="form-control creation-input-zero" type="text"
+					name="key" > </input>
+			</div>
+		</div>
+
+		<div class="row creation-component-zero">
+			<div id ="div_select_0" class="col-md-2 creation-language-zero">
+				<select id="select_0">
+					<option value=""></option> @languages.map{ language =>
+					<option value="@language">@language</option> }
+				</select>
+
+			</div>
+			<div id="div_message_0" class="col-md-9 creation-input-div-zero">
+
+				<input id="message_value_0" 
+					class="form-control creation-input-zero" type="text"
+					placeholder="Add your translation" > </input> <input
+					id="language_value_0"  type="hidden" value=""
+					> </input>
+			</div>
+			<div id="language_0" class="col-md-1 translation-trash-div"
+				onclick="addLanguage(this.id)">
+				<button id="translation_remove_button" type="button"
+					class="btn btn-default trash-button">
+					<span id="span_language_0" class="glyphicon glyphicon-plus"
+						aria-hidden="true"></span>
+				</button>
+			</div>
+
+		</div>
+
+
+
+		<div class="row creation-component-zero ">
+			<div class="col-md-2 creation-label-zero">
+				<label class="control-label creation-control-label">Tags:</label>
+			</div>
+			<div class="col-md-10 creation-input-div-zero">
+				<div class="form-control creation-input-zero"
+					id="tags-span-container">
+					<div id="tags-collector" class="inlin"></div>
+					<div class="inlin">
+						&nbsp <input id="tag-input" autocomplete="on"
+							class="autocomplete textttt" type="text" />
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row create-div-top">
+			<div class="col-md-12">
+				<button id="translation_create_button"  type="submit"
+					class="btn btn-default create-button">
+					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+				</button>
+				<button id="translation_create_button" type="submit"
+					class="btn btn-default create-button" >
+					<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+				</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+</div>
+
+<div class="col-md-3 aside"></div>
