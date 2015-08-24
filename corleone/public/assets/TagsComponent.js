@@ -1,17 +1,12 @@
-
-
 $(function(err, window) {
-       
 	function is_array(input) {
 		$ret = typeof (input) == 'object' && (input instanceof Array);
 		return $ret;
 	}
-
 	function split(val) {
 		return val.split("(");
 	}
 	;
-
 	$(".autocomplete").autocomplete(
 			{
 				source : function(request, response) {
@@ -47,13 +42,9 @@ $(function(err, window) {
 						ui.item.value = itemTitle;
 					}
 				}
-			})
-			
-			
-			
-			;
+			});
 
-});
+   });
 function delet(id) {
 	var el3 = $('#parent_' + id);
 	el3.remove();
@@ -71,19 +62,20 @@ $('#tag-input').blur(function(event) {
 $('#tags-span-container')
 		.keydown(
 				function(e) {
+				//case delete clicked
 					if (e.keyCode == 8) {
 
 						var test = $('#tag-input').val();
 						if (!test) {
-							$('#tags-collector .tm:last-child').remove();
+							$('#tags-collector .tag-span:last-child').remove();
 						}
 
 					}
+					//case space clicked
 					if (e.keyCode == 32) {
-
 						var str = $('#tag-input').val().trim();
 						var id = ID()
-						var result = "<span id=\"parent_"+id+"\" class='tm'>&nbsp;<span  contenteditable=\"false\""
+						var result = "<span id=\"parent_"+id+"\" class='tag-span'>&nbsp;<span  contenteditable=\"false\""
 								+ "class=\"label label-success\""
 								+ ">"
 								+ "<input readonly=\"readonly\" class=\"input-transparent\" type=\"hidden\" name='tags' value=\""

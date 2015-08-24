@@ -70,7 +70,7 @@
 						<div class="form-control creation-input-zero" id="tags-span-container">
 							<div id="tags-collector" class="inlin">
 							@{count=1}
-							@message.tags.map { tag => <span class='tm' id="parent_@count"> &nbsp; <span
+							@message.tags.map { tag => <span class='tag-span' id="parent_@count"> &nbsp; <span
 											contenteditable="false" class="label label-success" id="PACK"><input
 												readonly="readonly" class="input-transparent" type="hidden"
 												name='tags' value="@tag">@tag&nbsp;<span
@@ -82,7 +82,7 @@
 										}
 						    </div>
 							<div class="inlin">
-								&nbsp <input id="tag-input" autocomplete="on" class="autocomplete textttt" type="text"/>
+								&nbsp <input id="tag-input" autocomplete="on" class="autocomplete tag-text" type="text"/>
 							</div>
 						</div>
 				</div>

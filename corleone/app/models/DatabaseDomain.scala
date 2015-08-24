@@ -14,7 +14,9 @@ case class TranslationKey(id: Option[Long],
 
 object LanguageCodes extends Enumeration {
   type LanguageCode = Value
-  val EN_GB, EN_US, DE_DE = Value
+  val EN_GB= Value("en-GB")
+  val EN_US=Value("en-US")
+  val DE_DE=Value("de-DE")
 }
 
 case class TranslationMessage(id: Option[Long],

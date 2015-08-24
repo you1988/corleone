@@ -1,4 +1,6 @@
 package services
+
+import models.Error.ShortError
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
@@ -13,16 +15,16 @@ import models.Response
 import com.google.inject.ImplementedBy
 import scala.concurrent.Future
 trait TranslationManage  {
-  def getTranslationMessage(languageCodes: Option[Seq[String]], tags: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Future[Option[Response.MsgConstntsResponse]]
-  def getIfExist(key: String, languages: Option[Seq[String]]): Future[Option[MessageConstant.MessageConstant]]
-  def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Option[Error.ShortError]]
-  def createMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Option[Error.ShortError]]
+  def getTranslationMessage(languageCodes: Option[Seq[String]], tags: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
+  def getIfExist(key: String, languages: Option[Seq[String]]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
+  def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Either[MessageConstant.MessageConstant, ShortError]]
+  def createMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Either[MessageConstant.MessageConstant, ShortError]]
   def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]]
-  def deleteMessageConstant(key: String)
-  def getIfExistWithKey(key: String): Future[Option[MessageConstant.MessageConstant]]
-  def getIfExistWithTag(key: String): Future[Option[Seq[MessageConstant.MessageConstant]]]
+  def deleteMessageConstant(key: String):Future[Option[ShortError]]
+  def getIfExistWithKey(key: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
+  def getIfExistWithTag(key: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
 
-  def getAllTags(): Future[Option[Seq[String]]]
+  def getAllTags(): Future[Either[Seq[String], ShortError]]
   def getAllLanguages(): Seq[String]
   
 }

@@ -2,8 +2,7 @@ package modules
 import play.api.inject._
 import services.TranslationManage
 import services.TranslationManageImpl
-import services.FakeTranslationManager
-import services.FakeTranslationManagerController
+
 class CustomModule extends Module {
   def bindings(environment: play.api.Environment,
                configuration: play.api.Configuration) = Seq(

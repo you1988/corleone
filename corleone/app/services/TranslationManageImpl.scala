@@ -1,408 +1,320 @@
+/*
+ * Copyright [2015] Zalando SE
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package services
-import models.MessageConstant
-import models.Link
-import models.Translation
-import models.Error
-import models.Response
-import helpers.PostgresDriverExtended.api._
-import models.Tables
-import play.api._
-import scala.concurrent.ExecutionContext.Implicits._
-import scala.util.{ Failure, Success }
-import models.Tables.TranslationKeyTable
-import models.{ TranslationKey, TranslationMessage, LanguageCodes, Tables }
-import helpers.PostgresDriverExtended.api._
-import scala.concurrent.Future
-import java.sql.Timestamp
-import java.time.LocalDateTime
-import models.TranslationMessage
-import javax.inject._
-import models.{ TranslationKey, TranslationMessage, Operations, TranslationTagging, TagHolder, Version, LanguageCodes, Tables }
-import helpers.PostgresDriverExtended.api._
-import scala.concurrent.Future
-import java.sql.Timestamp
-import java.time.LocalDateTime
-import models.TranslationMessage
-import models.Translation
-import models.TagHolder
-import akka.dispatch.OnFailure
-import com.zaxxer.hikari.{ HikariDataSource, HikariConfig }
+
 import javax.inject._
 
+import dao.MessageConstantQueryBuilder
+import helpers.PostgresDriverExtended.api._
+import models.Error.ShortError
+import models.{MessageConstant, _}
+import org.postgresql.util.PSQLException
+import play.api._
+
+import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.Future
+import scala.util.matching.Regex
+
+/**
+ * Service contains all logic needed from Corleone.
+ */
 @Singleton
 class TranslationManageImpl extends TranslationManage {
   private val db = Database.forConfig("mydb")
-  def getTranslationMessage(languageCodesOp: Option[Seq[String]], tagsOp: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Future[Option[Response.MsgConstntsResponse]] = {
+
+  /**
+   * This function return :
+   * case languageCodesOp and tagsOp are not empty  : message constants that has at
+   * least one transaltion in one of languageCodesOp and tag in tagsOp.
+   * case languageCodesOp is not empty  : message constants that has at
+   * least one transaltion in one of languageCodesOp.
+   * case tagsOp is not empty  : message constants that has at
+   * least one tag in one of tags.
+   * If languageCodesOp and tagsOp are  empty: all message constants.
+   * @return Message constants respect the previous conditions.
+   *         NotFoundError if no message constant with key and has translation in one of  languageCodes.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+
+  def getTranslationMessage(languageCodesOp: Option[Seq[String]], tagsOp: Option[Seq[String]], limit: Option[Integer], after: Option[String], before: Option[String]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
     val languages = languageCodesOp.getOrElse[Seq[String]](LanguageCodes.values.toSeq.map { x =>
       x.toString()
     }).map(languageCode =>
-      LanguageCodes.withName(languageCode.toUpperCase()))
-    val searchquery = languageCodesOp match {
-      case None => (for {
-        translationkey <- Tables.translationKey join Tables.translationMessage on (_.id === _.translationKeyId) join Tables.translationTagging on (_._1.id === _.translationKeyId) join Tables.tag on (_._2.tagId === _.id) if (translationkey._1._1._2.languageCode inSet languages)
-      } yield {
-        (translationkey._1._1._1.name, (translationkey._1._1._2.languageCode, translationkey._1._1._2.value), translationkey._2.name)
-
-      })
-      case Some(tags) => (for {
-        translationkey <- Tables.translationKey join
-          Tables.translationMessage on
-          (_.id === _.translationKeyId) join
-          Tables.translationTagging on
-          (_._1.id === _.translationKeyId) join
-          Tables.tag on
-          (_._2.tagId === _.id) if (translationkey._2.name inSet tags) &&
-          (translationkey._1._1._2.languageCode inSet languages)
-      } yield {
-
-        (translationkey._1._1._1.name, (translationkey._1._1._2.languageCode, translationkey._1._1._2.value), translationkey._2.name)
-
-      })
-
-    }
-
-    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String)]] = db.run(searchquery.result)
-    transaction.map(res => {
-      val keys = res.map(row => row._1).distinct
-      val messages: Seq[MessageConstant.MessageConstant] = keys.map(key => {
-        val trans = res.filter(x => x._1 == key).map(row => row._2).distinct.map(s => Translation.Translation(s._1.toString(), s._2))
-        val tags = res.filter(x => x._1 == key).map(row => row._3).distinct
-        MessageConstant.MessageConstant(key, "tes", tags, trans)
-      })
-      if (messages == null || messages.isEmpty)
-        None
-      else Some(Response.MsgConstntsResponse(messages, messages.size))
-
-    }).recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        None
-      }
-    }
-  }
-  def getIfExist(key: String, languageCodes: Option[Seq[String]]): Future[Option[MessageConstant.MessageConstant]] = {
-    val searchquery = (for {
-      translationkey <- Tables.translationKey join Tables.translationMessage on
-        (_.id === _.translationKeyId) join
-        Tables.translationTagging on
-        (_._1.id === _.translationKeyId) join
-        Tables.tag on
-        (_._2.tagId === _.id) if (translationkey._1._1._1.name === key) &&
-        (translationkey._1._1._2.languageCode inSet
-          languageCodes.getOrElse[Seq[String]](LanguageCodes.values.toSeq.map { x =>
-            x.toString()
-          }).map(languageCode =>
-            LanguageCodes.withName(languageCode.toUpperCase())))
-    } yield {
-
-      (translationkey._1._1._1.name,
-        (translationkey._1._1._2.languageCode, translationkey._1._1._2.value),
-        translationkey._2.name)
-
-    })
-
-    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String)]] = db.run(searchquery.result)
-    transaction.map(res => {
-      val keys = res.map(row => row._1).distinct
-      val messages: Seq[MessageConstant.MessageConstant] = keys.map(key => {
-        val trans = res.filter(x => x._1 == key).map(row => row._2).distinct.map(s => Translation.Translation(s._1.toString(), s._2))
-        val tags = res.filter(x => x._1 == key).map(row => row._3).distinct
-        MessageConstant.MessageConstant(key, "tes", tags, trans)
-      })
-      if (messages == null || messages.isEmpty)
-        None
-      else Some(messages.head)
-
-    }).recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        None
-      }
-    }
-  }
-  def getIfExistWithKey(key: String): Future[Option[MessageConstant.MessageConstant]] = {
-    val innerJoin = (for {
-      translationkey <- Tables.translationKey if translationkey.name === key
-      translationMessage <- Tables.translationMessage if translationkey.id === translationMessage.translationKeyId
-      translationTagging <- Tables.translationTagging if translationkey.id === translationTagging.translationKeyId
-      tag <- Tables.tag if tag.id === translationTagging.tagId
-    } yield {
-
-      (translationkey.name, (translationMessage.languageCode, translationMessage.value), tag.name)
-
-    })
-    val t = innerJoin.result
-
-    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String)]] = db.run(t)
-    transaction.map(res => {
-      val keys = res.map(row => row._1).distinct
-      val messages: Seq[MessageConstant.MessageConstant] = keys.map(key => {
-        val trans = res.filter(x => x._1 == key).map(row => row._2).distinct.map(s => Translation.Translation(s._1.toString(), s._2))
-        val tags = res.filter(x => x._1 == key).map(row => row._3).distinct
-        MessageConstant.MessageConstant(key, "tes", tags, trans)
-      })
-      if (messages == null || messages.isEmpty)
-        None
-      else Some(messages.head)
-
-    }).recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        None
-      }
-    }
-  }
-  //  def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Option[Error.ShortError]] = {
-  //    val innerJoin = (for {
-  //      //      translationKeyId <- for { translationkey <- Tables.translationKey if translationkey.name === messageConstant.key } yield translationkey.id
-  //      translationkey2 <- Tables.translationKey.filter(_.name === messageConstant.key).result.headOption
-  //      _ <- Tables.translationMessage.filter(_.translationKeyId === translationkey2.get.id.get).delete
-  //      _ <- Tables.translationTagging.filter(_.translationKeyId === translationkey2.get.id.get).delete
-  //      translation <- (Tables.translationMessage returning Tables.translationMessage.map(_.id)) ++= (messageConstant.translations map { translation => TranslationMessage(None, LanguageCodes.withName(translation.languageCode), translationkey2.get.id.get, translation.message, true, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now())) })
-  //      tagsExist <- Tables.tag.filter(_.name inSet messageConstant.tags).result
-  //      tagsCreated <- (Tables.tag returning Tables.tag.map(_.id)) ++= (messageConstant.tags.filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
-  //        TagHolder(None, tag, Timestamp.valueOf(LocalDateTime.now()))
-  //      })
-  //      tags <- Tables.tag.filter(_.name inSet messageConstant.tags).result
-  //      _ <- Tables.translationTagging ++= tags.map { tahHolder =>
-  //        TranslationTagging(None,
-  //          tahHolder.id.get,
-  //          translationkey2.get.id.get,
-  //          true,
-  //          Timestamp.valueOf(LocalDateTime.now()),
-  //          Timestamp.valueOf(LocalDateTime.now()))
-  //      }
-  //    } yield ()).transactionally
-  //    val t = innerJoin
-  //
-  //    val transaction: Future[Unit] = db.run(t)
-  //    transaction.map {
-  //      ex => None
-  //    }.recover {
-  //      case ex: Exception => {
-  //        Logger.error(ex.getMessage)
-  //        Some(Error.ShortError("test333", "test3333"))
-  //      }
-  //    }
-  //  }
-  def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Option[Error.ShortError]] = {
-       val translationky = TranslationKey(None, messageConstant.key, true, Timestamp.valueOf(LocalDateTime.now()))
-    val innerJoin = (for {
-      translationkey2 <- Tables.translationKey.filter(translationKey=>(translationKey.name === messageConstant.key && translationKey.isActive)).result.headOption
-      _ <- Tables.translationMessage.filter(translationMessage=>(translationMessage.translationKeyId === translationkey2.get.id.get && translationMessage.isActive)).map(_.isActive).update(false)
-      _ <- Tables.translationTagging.filter(translationTagging=>(translationTagging.translationKeyId === translationkey2.get.id.get&&translationTagging.isActive)).map(_.isActive).update(false)
-      _ <- Tables.translationKey.filter(translationKey=>(translationKey.name === messageConstant.key && translationKey.isActive)).map(_.isActive).update(false)
-      msg <- (Tables.translationKey returning Tables.translationKey.map(_.id) into ((translationky, id) => translationky.copy(id = Some(id)))) += translationky
-      translation <- Tables.translationMessage ++= (messageConstant.translations map { translation => TranslationMessage(None, LanguageCodes.withName(translation.languageCode), msg.id.get, translation.message, true, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now())) })
-      tagsExist <- Tables.tag.filter(_.name inSet messageConstant.tags).result
-      tagsCreated <- Tables.tag ++= (messageConstant.tags.filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
-        TagHolder(None, tag, Timestamp.valueOf(LocalDateTime.now()))
-      })
-      tags <- Tables.tag.filter(_.name inSet messageConstant.tags).result
-      _ <- Tables.translationTagging ++= tags.map { tahHolder =>
-        TranslationTagging(None,
-          tahHolder.id.get,
-          msg.id.get,
-          true,
-          Timestamp.valueOf(LocalDateTime.now()),
-          Timestamp.valueOf(LocalDateTime.now()))
-      }
-      _ <- Tables.version += Version(None, messageConstant.key, msg.id.get, Operations.MODIFIED, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now()))
-
-    } yield ()).transactionally
-    val t = innerJoin
-
-    val transaction: Future[Unit] = db.run(t)
-    transaction.map {
-      ex => None
-    }.recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        Some(Error.ShortError("test333", "test3333"))
-      }
-    }
-  }
-  def createMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Option[Error.ShortError]] = {
-    var transaltionMessages: Seq[TranslationMessage] = Seq[TranslationMessage]()
-    var tags: Seq[TagHolder] = Seq[TagHolder]()
-    messageConstant.translations.foreach {
-      tran => Logger.error(tran.toString())
-    }
-    val translationKey = TableQuery[TranslationKeyTable]
-    val translationky = TranslationKey(None, messageConstant.key, true, Timestamp.valueOf(LocalDateTime.now()))
-    val tagTable = TableQuery[Tables.TagTable]
-    val translationTaggingTable = TableQuery[Tables.TranslationTaggingTable]
-
-    val translationMessage = Tables.translationMessage
-
-    val transaction = (for {
-      msg <- (translationKey returning translationKey.map(_.id) into ((translationky, id) => translationky.copy(id = Some(id)))) += translationky
-      translation <- translationMessage ++= (messageConstant.translations map { translation => TranslationMessage(None, LanguageCodes.withName(translation.languageCode), msg.id.get, translation.message, true, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now())) })
-      tagsExist <- tagTable.filter(_.name inSet messageConstant.tags).result
-      tagsCreated <- tagTable ++= (messageConstant.tags.filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
-        TagHolder(None, tag, Timestamp.valueOf(LocalDateTime.now()))
-      })
-      tags <- tagTable.filter(_.name inSet messageConstant.tags).result
-      _ <- translationTaggingTable ++= tags.map { tahHolder =>
-        TranslationTagging(None,
-          tahHolder.id.get,
-          msg.id.get,
-          true,
-          Timestamp.valueOf(LocalDateTime.now()),
-          Timestamp.valueOf(LocalDateTime.now()))
-      }
-      _ <- Tables.version += Version(None, msg.name, msg.id.get, Operations.CREATED, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now()))
-
-    } yield {
-
-    }).transactionally
-    val f: Future[Unit] = db.run(transaction)
-    f.map {
-      ex => None
-    }.recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        Some(Error.ShortError("test333", "test3333"))
-      }
-    }
-
+      LanguageCodes.withName(languageCode))
+    var searchquery = MessageConstantQueryBuilder.buildSelectAllMessageConstantQuery()
+    searchquery = searchquery.filter(x => (tagsOp match {
+      case None => x._2._1 inSet languages
+      case Some(tags) => (x._3 inSet tags) && (x._2._1 inSet languages)
+    })).sortBy(_._1.asc).take(limit.getOrElse[Integer](1000))
+    if (!after.isEmpty) searchquery = searchquery.filter(_._1 >= after.get)
+    if (!before.isEmpty) searchquery = searchquery.filter(_._1 < before.get)
+    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]] = db.run(searchquery.result)
+    handleSearchQueryResponse(transaction)
   }
 
+  /**
+   * This function return the message constant mapped to the key
+   * @param key The key of the message constant
+   * @return The message constant with key if found.
+   *         NotFoundError if no message constant with the specified key.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+  def getIfExistWithKey(key: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
+    getIfExist(key, None)
+  }
+
+  /**
+   * This function return the translations mapped to a key and specific languages.
+   * If language codes is empty all the translations.
+   * @param key The key of the message constant
+   * @return The translations in languageCodes for message with key if languageCodes empty
+   *         the whole message constant if found.
+   *         NotFoundError if no message constant with key and has translation in one of  languageCodes.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+  def getIfExist(key: String, languageCodes: Option[Seq[String]]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
+    val languages: Seq[LanguageCodes.LanguageCode] = languageCodes.getOrElse(LanguageCodes.values.seq.map(l => l.toString())).map(l => LanguageCodes.withName(l)).toSeq
+    var searchquery = MessageConstantQueryBuilder.buildSelectAllMessageConstantQuery().filter(_._2._1 inSet languages).filter(_._1 === key)
+    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]] = db.run(searchquery.result)
+    handleSearchQueryResponse(transaction)
+  }
+
+  /**
+   * This function return the message constant tagged with tag
+   * @param tag The tag of the message constant
+   * @return The message constant tagged with tag if found.
+   *         NotFoundError if no message constant with tagged with tag.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+  def getIfExistWithTag(tag: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
+    val searchQuery = MessageConstantQueryBuilder.buildSelectAllMessagesConstantsWithTagQuery(tag)
+    val searchResult = searchQuery.result
+    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]] = db.run(searchResult)
+    handleSearchQueryResponse(transaction)
+  }
+
+  /**
+   * This function updates a message constant , process to update a message constant is done in one transaction:
+   *        -Disable the old version of the message constant based on the message constant message key by setting the active propertyof  translations and tags to false.
+   *        -Create a new translation Message by inserting its different properties into the transaltion_tagging ,tansaltion_message and transalation_key tables
+   *         and tag tables case that tag is new.
+   *        -Create a version by inserting a row in version table for versioning the update version of message constant.
+   * @param messageConstant The up to date version of the message constant
+   * @return The updated version if the update transaction is success.
+   *         MessageConstantViolatedConstraintError Case the message constant violate one of the data base constraint.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+  def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Either[MessageConstant.MessageConstant, Error.ShortError]] = {
+    val updateResult: Future[String] = db.run((MessageConstantQueryBuilder.buildDeleteMessageConstantAction(messageConstant.key).andThen(MessageConstantQueryBuilder.buildInsertMessageConstantAction(messageConstant)
+    ).andThen(MessageConstantQueryBuilder.buildInsertVersioning(messageConstant.key, Operations.MODIFIED)))
+      .transactionally)
+    handleUpSetAction(messageConstant, updateResult)
+  }
+
+  /**
+   * This function creates a message constant , process to insert a message constant is done in one transaction:
+   *        -Create a new message constant by inserting its different properties into the transaltion_tagging ,tansaltion_message and transalation_key tables
+   *         and tag tables case that tag is new.
+   *        -Create a version by inserting a row in version table for versioning the message constant.
+   * @param messageConstant  The message constant to be created
+   * @return The updated version if the update transaction is success.
+   *         Short error in the other case.
+   */
+  def createMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Either[MessageConstant.MessageConstant, Error.ShortError]] = {
+    val insertResult: Future[String] = db.run((MessageConstantQueryBuilder.buildInsertMessageConstantAction(messageConstant)
+      .andThen(MessageConstantQueryBuilder.buildInsertVersioning(messageConstant.key, Operations.CREATED)))
+      .transactionally)
+    handleUpSetAction(messageConstant, insertResult)
+
+  }
+  /**
+   * This function insert a list of  message constants , process to insert a list of message constants is done in one transaction:
+   *        -Create a new message constants by inserting their different properties into the transaltion_tagging ,tansaltion_message and transalation_key tables
+   *         and tag tables case that tag is new.
+   *        -Create versions by inserting a row in version table for versioning all created message constants.
+   * @param messageConstants The message constants to be created
+   * @return The updated version if the update transaction is success.
+   *         MessageConstantViolatedConstraintError Case the message constant violate one of the data base constraint.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
   def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]] = {
-    var transaltionMessages: Seq[TranslationMessage] = Seq[TranslationMessage]()
-    var tags: Seq[TagHolder] = Seq[TagHolder]()
 
-    val translationKeys: Seq[TranslationKey] = messageConstants.map(messageConstant => TranslationKey(None, messageConstant.key, true, Timestamp.valueOf(LocalDateTime.now())))
-
-    val tagTable = TableQuery[Tables.TagTable]
-    val translationTaggingTable = TableQuery[Tables.TranslationTaggingTable]
-
-    val translationMessage = Tables.translationMessage
-
-    val transaction = (for {
-      msgKey <- (Tables.translationKey returning Tables.translationKey.map(_.id) into ((translationKey, id) => (translationKey.name, id))) ++= translationKeys
-      msgkeyMap = msgKey.toMap
-      translation <- Tables.translationMessage ++= (messageConstants.flatMap(messageConstant =>
-        messageConstant.translations map { translation =>
-          TranslationMessage(None,
-            LanguageCodes.withName(translation.languageCode),
-            msgkeyMap.get(messageConstant.key).get,
-            translation.message,
-            true,
-            Timestamp.valueOf(LocalDateTime.now()),
-            Timestamp.valueOf(LocalDateTime.now()))
-        }))
-      tagsExist <- tagTable.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
-      tagsCreated <- tagTable ++= (messageConstants.flatMap(messageConstant => messageConstant.tags).filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
-        TagHolder(None, tag, Timestamp.valueOf(LocalDateTime.now()))
-      })
-      tags <- tagTable.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
-      tagMap = tags.map(tag => tag.name -> tag.id.get).toMap
-      _ <- translationTaggingTable ++= messageConstants.flatMap(messageConstant => messageConstant.tags.map { tag =>
-        TranslationTagging(None,
-          tagMap.get(tag).get,
-          msgkeyMap.get(messageConstant.key).get,
-          true,
-          Timestamp.valueOf(LocalDateTime.now()),
-          Timestamp.valueOf(LocalDateTime.now()))
-      })
-      _ <- Tables.version ++= msgKey.map(el => Version(None, el._1, el._2, Operations.CREATED, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now())))
-
-    } yield {
-
-    }).transactionally
-    val f: Future[Unit] = db.run(transaction)
+    val transaction = MessageConstantQueryBuilder.buildCreateMessageContants(messageConstants)
+    val f: Future[Unit] = db.run(transaction.transactionally)
     f.map {
       ex => None
     }.recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        Some(Error.ShortError("test333", "test3333"))
-      }
+      case ex: Exception => Some(mapExceptionError(ex))
     }
 
   }
-  def deleteMessageConstant(key: String) = {
-    val innerJoin = (for {
-      //      translationKeyId <- for { translationkey <- Tables.translationKey if translationkey.name === messageConstant.key } yield translationkey.id
-      translationkey2 <- Tables.translationKey.filter(translationKey=>(translationKey.name === key && translationKey.isActive)).result.headOption
-      _ <- Tables.translationMessage.filter(translationMessage=>(translationMessage.translationKeyId === translationkey2.get.id.get && translationMessage.isActive)).map(_.isActive).update(false)
-      _ <- Tables.translationTagging.filter(translationTagging=>(translationTagging.translationKeyId === translationkey2.get.id.get && translationTagging.isActive)).map(_.isActive).update(false)
-      _ <- Tables.translationKey.filter(translationKey=>(translationKey.name === key && translationKey.isActive)).map(_.isActive).update(false)
-      _ <- Tables.version += Version(None, key, translationkey2.get.id.get, Operations.DELETED, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now()))
-    } yield ()).transactionally
-    val t = innerJoin
 
-    val transaction: Future[Unit] = db.run(t)
+
+  /**
+   * This function insert a list of  message constants , process to insert a list of message constants is done in one transaction:
+   *        -Disable the old version of the message constant based on the message constant message key by setting the active property of  translations and tags to false.
+   *         -Create version in version table with DELETED operation type for versioning the delete of the message constant.
+   * @param key The key of the message constant to be deleted
+   * @return None case the operation success
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+  def deleteMessageConstant(key: String):Future[Option[ShortError]] = {
+
+    val transaction: Future[Unit] = db.run(
+      MessageConstantQueryBuilder.buildInsertVersioning(key, Operations.DELETED)
+        .andThen(MessageConstantQueryBuilder.buildDeleteMessageConstantAction(key)))
     transaction.map {
       ex => None
     }.recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        Some(Error.ShortError("test333", "test3333"))
-      }
+      case ex: Exception => Some(mapExceptionError(ex))
     }
   }
-  def getAllTags(): Future[Option[Seq[String]]] = {
+  /**
+   * This function list all tags in the data base
+   * @return All tags found in the data base if select query successed.
+   *         Short error in the other case.
+   */
+  def getAllTags(): Future[Either[Seq[String], ShortError]] = {
+
     val innerJoin = (for {
       tag <- Tables.tag
     } yield {
 
-      tag.name
+        tag.name
 
-    })
+      })
     val t = innerJoin.result
 
     val transaction: Future[Seq[String]] = db.run(t)
     transaction.map(res => {
-
       if (res == null || res.isEmpty)
-        Some(Seq())
-      else Some(res)
+        Right(new NotFoundError(""))
+      else Left(res)
 
     }).recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        None
-      }
+      case ex: Exception => Right(mapExceptionError(ex))
     }
   }
-  def getIfExistWithTag(tag: String): Future[Option[Seq[MessageConstant.MessageConstant]]] = {
-    val innerJoin = (for {
-      (translationTaggings, tags) <- Tables.translationTagging join Tables.tag on (_.tagId === _.id) if tags.name === tag &&translationTaggings.isActive
-      translationkey <- Tables.translationKey if translationkey.id === translationTaggings.translationKeyId && translationkey.isActive
-      translationMessage <- Tables.translationMessage if translationkey.id === translationMessage.translationKeyId && translationMessage.isActive
-      translationTagging <- Tables.translationTagging if translationkey.id === translationTagging.translationKeyId && translationTagging.isActive
-      tag <- Tables.tag if tag.id === translationTagging.tagId
-    } yield {
 
-      (translationkey.name, (translationMessage.languageCode, translationMessage.value), tag.name)
 
-    })
-    val t = innerJoin.result
-
-    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String)]] = db.run(t)
-    transaction.map(res => {
-      val keys = res.map(row => row._1).distinct
-      val messages: Seq[MessageConstant.MessageConstant] = keys.map(key => {
-        val trans = res.filter(x => x._1 == key).map(row => row._2).distinct.map(s => Translation.Translation(s._1.toString(), s._2))
-        val tags = res.filter(x => x._1 == key).map(row => row._3).distinct
-        MessageConstant.MessageConstant(key, "tes", tags, trans)
-      })
-      if (messages == null || messages.isEmpty)
-        Some(Seq())
-      else Some(messages)
-
-    }).recover {
-      case ex: Exception => {
-        Logger.error(ex.getMessage)
-        None
-      }
-    }
-  }
   def getAllLanguages(): Seq[String] = {
-    LanguageCodes.values.toSeq.map { x =>
-      x.toString()
+    LanguageCodes.values.toSeq.map {
+      x =>
+        x.toString()
+    }
+  }
+  /**
+   * This function handle search queries response.
+   * @param transaction     The search query result.
+   * @return                The list of message constants resulted from the query search if search query successed
+   *                        Short error if search query failed
+   */
+  private def handleSearchQueryResponse(transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
+    transaction.map(res => {
+      val messageConstants = transformTuppleToMessageConstants(res)
+      if (messageConstants.isEmpty) Right(new NotFoundError(Constants.MESSAGE_CONSTANT_NOT_FOUND_WHITH_TAG.stripMargin.format("tag")))
+      else Left(messageConstants)
+
+    }).recover {
+      case ex: Exception => {
+        Logger.error(ex.getMessage)
+        Right(mapExceptionError(ex))
+      }
+    }
+  }
+
+  /**
+   * This function transforms a tupple of message constant properties to a list of message constant.
+   * @param messageConstants Tuple contains different properties of message constants.
+   * @return The list of message constant
+   */
+  private def transformTuppleToMessageConstants(messageConstants: Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]): Seq[MessageConstant.MessageConstant] = {
+
+    messageConstants.groupBy(x => x._1 -> x._4).map(messageConstant => MessageConstant.MessageConstant(
+      messageConstant._1._1,
+      messageConstant._1._2,
+      messageConstant._2.groupBy(_._3).keySet.toSeq,
+      messageConstant._2.groupBy(_._2).keySet.map(message => Translation.Translation(message._1.toString(), message._2)).toSeq
+    )
+    ).toSeq
+  }
+  /**
+   * This function handle  exception by mapping it to  an intern error.
+   * @param exception To be handled.
+   * @return The mapped intern error to exception if a mapping found
+   *         NotHandledError in the other case.
+   */
+ private def mapExceptionError(exception: Exception): ShortError = {
+    exception match {
+      case pslqException: PSQLException => {
+        getDetailMessageForPSQLException(pslqException) match {
+          case Right(error) => error
+          case Left(messageError) => new MessageConstantViolatedConstraintError(messageError)
+        }
+      }
+      case _ => new NotHandledError(exception.getMessage)
+    }
+  }
+
+  /**
+   * This function return the mapped error message to exception.
+   * @param exception To be handled.
+   * @return Customize error message if this type exception expected.
+   *         NotHandledError if this type exception not expected.
+   */
+  private def getDetailMessageForPSQLException(exception: PSQLException): Either[String, NotHandledError] = {
+    Constants.PSQL_ERROR_CONSTRAINT_MAPPING.getOrElse[Map[String, Tuple2[Regex, String]]](exception.getServerErrorMessage.getSQLState, Map()).get(exception.getServerErrorMessage().getConstraint())
+    match {
+      case Some(constraintHandled) => {
+        Left(Helper.getMessageError(constraintHandled._1,
+        constraintHandled._2,
+        exception.getServerErrorMessage.getMessage))
+
+      }
+      case None => {
+
+        Right(new NotHandledError(exception.getMessage))
+
+      }
+    }
+
+  }
+  /**
+   * This function handle  insert or update of message constant.
+   * @param messageConstant To be updated or inserted.
+   * @param upsetFuture     The result of an insert or an update action.
+   * @return                Current version of the message constant if  upsetaction success
+   *                        Short error if upset action failure
+   */
+  def handleUpSetAction(messageConstant: MessageConstant.MessageConstant, upsetFuture: Future[String]): Future[Either[MessageConstant.MessageConstant, Error.ShortError]] = {
+    upsetFuture.map {
+      version => Left(messageConstant.copy(version = version))
+    }.recover {
+      case ex: Exception => {
+        Logger.error(ex.getMessage)
+        Right(mapExceptionError(ex))
+      }
     }
   }
 

@@ -21,23 +21,19 @@ function addLanguage(id) {
 			"<div class=\"col-md-2 creation-language-zero\">"+
 				"<select id=\"select_"+index+"\">";
 		var selectId='select_'+arr[1];
-				    $("#" + selectId+ " option").each(function()
-				    		{
-				    	result+="<option value=\""+$(this).val()+"\">" +$(this).text() +"</option>";
-				    		
-				    		});
-
-
-			result+="</select>"+"</div>"+
+		$("#" + selectId+ " option").each(function(){
+			result+="<option value=\""+$(this).val()+"\">" +$(this).text() +"</option>";
+		});
+		result+=  "</select>"+
+		        "</div>"+
 				"<div class=\"col-md-9 creation-input-div-zero\">"+
 					"<input id=\"message_value_"+index+"\" class=\"form-control creation-input-zero\" type=\"text\" placeholder=\"Add your translation\">"+ "</input>"+
 					"<input id=\"language_value_"+index+"\"  type=\"hidden\">"+ "</input>"+
-
 				"</div>"+
-							"<div id =\"language_"+index+ "\" class=\"col-md-1 translation-trash-div\" onclick=\"addLanguage(this.id)\">"+
-						"<button id=\"translation_remove_button\" type=\"button\""+
+				"<div id =\"language_"+index+ "\" class=\"col-md-1 translation-trash-div\" onclick=\"addLanguage(this.id)\">"+
+				     "<button id=\"translation_remove_button\" type=\"button\""+
 							"class=\"btn btn-default trash-button\">"+"<span id =\"span_language_"+index+ "\"class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\">"+"</span>"+"</button>"+
-			"</div>"+
+			    "</div>"+
 			"</div>";
 		var m = "#" + id;
 		var el  = $(m).parent();

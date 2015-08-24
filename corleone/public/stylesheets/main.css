@@ -22,12 +22,12 @@ span.hover-remove:hover, span.hover-remove:focus {
 		rgba(102, 175, 233, 0.6) ! important;
 }
 
-.textttt {
+.tag-text {
 	outline: 0;
 	border: none;
 }
 
-.tm {
+.tag-span {
 	padding-left: 10px;
 }
 
@@ -307,36 +307,7 @@ input[type="radio"] {
 	}
 }
 
-/*     Since we removed the default focus styles, we have to add our own */
-/*     .custom-select select:focus { */
-/*         -webkit-box-shadow: 0 0 3px 1px #c00 !important; */
-/*         -moz-box-shadow: 0 0 3px 1px #c00 !important; */
-/*         box-shadow: 0 0 3px 1px #c00 !important; */
-/*     } */
 
-/* Select arrow styling */
-/*     .custom-select:after { */
-/*         content: "▼" !important; */
-/*         position: absolute !important; */
-/*         top: 0 !important; */
-/*         right: 0 !important; */
-/*         bottom: 0 !important; */
-/*         font-size: 60% !important; */
-/*         line-height: 30px !important; */
-/*         padding: 0 7px !important; */
-/*         background: white !important; */
-/*         color: #5cb85c !important; */
-
-/*         pointer-events:none !important; */
-
-/*         -webkit-border-radius: 0 px !important; */
-/*         -moz-border-radius: 0 px !important; */
-/*         border-radius: 0 px !important; */
-/*     } */
-
-/*     .no-pointer-events .custom-select:after { */
-/*         content: none !important; */
-/*     } */
 .s-hidden {
 	visibility: hidden;
 	padding-right: 10px;

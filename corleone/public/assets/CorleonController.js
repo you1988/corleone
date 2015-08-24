@@ -52,6 +52,7 @@ function validateCreationForm() {
 		$("#notification").append(errors);
 		return false;
 	}
+	return confirm('Do you want to confirm your action?');
 }
 function buildError(errorMsg) {
 	return "<div>"+
