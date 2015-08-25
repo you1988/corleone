@@ -4,6 +4,7 @@ import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import services.Constants
+import play.api._
 
 object MessageConstant {
   /**
@@ -39,7 +40,7 @@ object MessageConstant {
     Reads.filter(ValidationError(
       Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_FIELD_FORMAT_UNSUPORTED_ERROR_MESSAGE.stripMargin.format(field)
     ))(fieldValues => {
-      fieldValues.exists(str => !str.matches( """[a-z_A-Z0-9]*"""))
+      !fieldValues.exists(str => !str.matches( """[a-z_A-Z0-9]*"""))
     })
   /**
    * Validator to ensure that message constant do not contain duplicate tag.
@@ -81,7 +82,51 @@ object MessageConstant {
   case class MessageConstant(key: String, version: String, tags: Seq[String], translations: Seq[Translation.Translation])
 
 }
+object MessageConstantDelta {
 
+  /**
+   * Validator to ensure that values of the field match this regex [a-z_A-Z0-9]*.
+   */
+  def SeqValuesFormatValidator(field: String): Reads[Seq[String]] =
+    Reads.filter(ValidationError(
+      Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_FIELD_FORMAT_UNSUPORTED_ERROR_MESSAGE.stripMargin.format(field)
+    ))(fieldValues => {
+      fieldValues==null || fieldValues.isEmpty ||(!fieldValues.exists(str => !str.matches( """[a-z_A-Z0-9]*""")))
+    })
+  /**
+   * Validator to ensure that message constant do not contain duplicate tag.
+   */
+  val tagsValidator: Reads[Seq[String]] =
+    Reads.filter(ValidationError(
+      Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_INVALID_TAGS_ERROR_MESSAGE
+    ))(tags => {
+      tags==null||tags.isEmpty ||tags.distinct.size == tags.size
+    })
+  /**
+   * Validator to ensure that message constant do not contain multiple translation message for same language.
+   */
+  val translationValidator: Reads[Seq[Translation.Translation]] =
+    Reads.filter(ValidationError(Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_INVALID_TRANSLATIONS_ERROR_MESSAGE))(translation => {
+      translation==null || translation.isEmpty|| translation.groupBy(_.languageCode).keySet.size == translation.size
+    })
+
+
+
+  implicit val messageConstantWrites: Writes[MessageConstantDelta] = (
+    (JsPath \ "key").write[String] and
+      (JsPath \ "version").write[String] and
+      (JsPath \ "tags").write[Seq[String]] and
+      (JsPath \ "translations").write[Seq[Translation.Translation]])(unlift(MessageConstantDelta.unapply))
+  implicit val messageConstantReads: Reads[MessageConstantDelta] = (
+    (JsPath \ "key").read[String] and
+      (JsPath \ "version").read[String] and
+      (JsPath \ "tags").read[Seq[String]](SeqValuesFormatValidator("tags").keepAnd(tagsValidator)) and
+      (JsPath \ "translations").read[Seq[Translation.Translation]](translationValidator))(MessageConstantDelta.apply _)
+
+
+  case class MessageConstantDelta(key: String, version: String, tags: Seq[String], translations:Seq[Translation.Translation])
+
+}
 object Translation {
 
   val languageCodeValidator: Reads[String] =

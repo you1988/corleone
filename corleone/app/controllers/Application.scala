@@ -131,7 +131,6 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
   def createTranslation = Action.async { req =>
     val map: Map[String, Seq[String]] = req.body.asFormUrlEncoded.getOrElse(Map())
     translationManager.getAllTags().flatMap { tags =>
-      Logger.error("Im First")
       tags match {
         case Right(err) => Future {
           Ok(views.html.main(Seq())(null)(null));

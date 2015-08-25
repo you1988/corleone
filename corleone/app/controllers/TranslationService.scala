@@ -150,17 +150,17 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
    *         412 http response case the user version of message constant is out of date
    *         503 http response case the data base is down (time out error)
    *         500 http response case an error unexpected happens
-   *         400 http response case the request params are mal formed
+   *         422 http response case the request payload is not valid
    *         404 http response case there is no message constant with the specified key.
    */
   def patchTranslation(key: String) = Action.async(parse.json) {
     request =>
-      request.body.validate[MessageConstant.MessageConstant] match {
+      request.body.validate[MessageConstantDelta.MessageConstantDelta] match {
         // case payload is not valide return 422 http response.
         case e: JsError => Future {
           handleFailure(request, Left(e))
         }
-        case s: JsSuccess[MessageConstant.MessageConstant] => {
+        case s: JsSuccess[MessageConstantDelta.MessageConstantDelta] => {
           val messageConstant = s.get
           translationManager.getIfExistWithKey(key).flatMap { result =>
             result match {
@@ -173,8 +173,9 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
                 // case there is a message constant with this key
                 //check if message constant is up to date.
                 handleOutOfDateCase(request, message.head) match {
-                  case None =>
-                    translationManager.updateMessageConstant(messageConstant).map {
+                  case None =>{
+
+                    translationManager.updateMessageConstant(transformMessageConstantDelta(message.head,messageConstant)).map {
                       result => result match {
                         // update operation done return 204 http response
                         case Left(updatedMessage) =>
@@ -184,6 +185,7 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
                           //return 500 or 503 response
                           handleFailure(request, Right(err))
                       }
+                    }
                     }
                   // case message constant is out of date return 412 response
                   case Some(err) => err
@@ -204,13 +206,14 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
    *         412 http response case the user version of message constant is out of date
    *         503 http response case the data base is down (time out error)
    *         500 http response case an error unexpected happens
-   *         400 http response case the request params are mal formed
+   *         422 http response case the request payload is not valid
    *
    */
   def putTranslation(key: String) = Action.async(parse.json) {
     request =>
       request.body.validate[MessageConstant.MessageConstant] match {
         case e: JsError => Future {
+          // case payload is not valide return 422 http response.
           handleFailure(request, Left(e))
         }
         case s: JsSuccess[MessageConstant.MessageConstant] => {
@@ -326,6 +329,8 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
         result.withHeaders(headers: _*)
       }
       case "POST" => Status(map.get("POST").get)(Json.toJson(hATEOAS))
+      case "DELETE" => Status(map.get("DELETE").get)(Json.toJson(hATEOAS))
+
 
     }
 
@@ -353,6 +358,11 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
     } getOrElse handleSuccess(request, messages, limit)
 
   }
-
+private def transformMessageConstantDelta(message:MessageConstant.MessageConstant,messageConstantDelta:MessageConstantDelta.MessageConstantDelta):MessageConstant.MessageConstant={
+var result = message
+  if(!(messageConstantDelta.translations==null ||messageConstantDelta.translations.isEmpty)) result= message.copy(translations = messageConstantDelta.translations)
+  if(!(messageConstantDelta.tags==null || messageConstantDelta.tags.isEmpty)) result= message.copy(tags = messageConstantDelta.tags)
+  result
+  }
 
 }
