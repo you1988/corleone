@@ -34,7 +34,7 @@ import scala.util.matching.Regex
  */
 @Singleton
 class TranslationManageImpl extends TranslationManage {
-  private val db = Database.forConfig("mydb")
+  private val db = Database.forConfig("postgresDb")
 
   /**
    * This function return :
