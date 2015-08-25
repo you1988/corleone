@@ -77,17 +77,18 @@
 <script src="@routes.Assets.versioned("assets/CorleonModel.js")"></script>
 <script type="text/javascript" id="myscript">
       
-var test =[];
+var tags =[];
 @tags.map { tag => 
-test.push("@tag");
+tags.push("@tag");
 }
-    	model.tags= test;
+
+    	model.tags= tags;
     	
 
 
 </script>
 
-<script src="@routes.Assets.versioned("assets/CorleonService.js")"></script>
+
 <script src="@routes.Assets.versioned("assets/CorleonController.js")"></script>
 <script src="@routes.Assets.versioned("assets/LanguageSelectComponent.js")"></script>
 <script src="@routes.Assets.versioned("assets/TagsComponent.js")"></script>
