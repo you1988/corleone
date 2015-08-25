@@ -7,7 +7,7 @@ import scala.concurrent.Future
 class TranslationKeyDAO{
   
   private val translationKeyTable = Tables.translationKey
-  private def db: Database = Database.forConfig("mydb")
+  private def db: Database = Database.forConfig("slick.dbs.default")
 
   private def filterActiveName(name: String): Query[TranslationKeyTable, TranslationKey, Seq] =
     translationKeyTable.filter(x => x.name === name && x.isActive)
