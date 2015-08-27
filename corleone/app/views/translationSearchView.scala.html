@@ -1,0 +1,62 @@
+@* TranslationCreationForm Template File *@
+@(messages: Seq[models.MessageConstant.MessageConstant] )
+@import scala.Predef; var count = 1
+<div class="col-md-3 aside">
+</div>
+<div class="col-md-6 padding-zero">
+	<div class="panel-group" id="accordion">
+		@messages.map { message => 
+		<div class="panel panel-success panel-corner-none">
+			<div class="panel-heading panel-corner-none">
+				<h4 class="panel-title">
+					
+					<a data-toggle="collapse" data-parent="#accordion" href="#collapse@count">@message.key</a>
+				</h4>
+			</div>
+			<div id="collapse@count" class="panel-collapse collapse @if(count==1){in} ">
+				<form action="update_translation_form" method="post">
+				<input type="hidden" value ="@message.key" name="key"></input>
+			      @message.translations.map{ translation =>
+					<div class="row creation-component-zero">
+						<div class="col-md-2 creation-label-zero">
+								<label class="control-label creation-control-label">@translation.languageCode</label>
+								<input type="hidden" value="@translation.languageCode" name="translationslanguage"></input>
+						</div>
+						<div class="col-md-10 creation-input-div-zero">
+							<input class="form-control creation-input-zero" type="text"  name="translationsmessage" id="translation_key" value="@translation.message" readonly> </input>
+						</div>
+					</div>
+						   }
+					<div class="row creation-component-zero ">
+						<div class="col-md-2 creation-label-zero">
+							<label class="control-label creation-control-label">Tags:</label>
+						</div>
+						<div class="col-md-10 creation-input-div-zero">
+							<div class="form-control creation-input-zero" id="tags-span-container">
+								<div id="tags-collector" class="inlin">
+					  				@message.tags.map { tag => 
+					  				<span class='tag-span'> &nbsp; <span
+																	contenteditable="false" class="label label-success"><input
+																		readonly="readonly" class="input-transparent" type="hidden"
+																		name='tags' value="@tag">@tag&nbsp;</span>
+															</span> }
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row creation-component-zero-without-border">
+						<div class="create-div-top">
+							<div class="col-md-12">
+								<button id="translation_create_button" type="submit"
+															class="btn btn-default create-button"><span class="glyphicon glyphicon-edit" aria-hidden="true"></span></button>
+							</div>
+						</div>
+					</div>		   
+				</form>
+			</div>
+		</div>
+		@{count+=1}
+		}
+	</div>
+</div>
+		

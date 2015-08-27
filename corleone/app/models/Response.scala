@@ -1,9 +1,7 @@
 package models
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
-/**
- * @author ychahbi
- */
+
 object Response {
   case class SearchResponse(messageConstants: Seq[MessageConstant.MessageConstant], _links: Seq[Link.Link])
   implicit val searchResponseWrites: Writes[SearchResponse] = (
@@ -20,8 +18,5 @@ object Response {
     (JsPath \ "messageConstant").read[MessageConstant.MessageConstant] and
     (JsPath \ "_links").read[Seq[Link.Link]])(MessageConstantResponse.apply _)
 
-  case class InternResponse(messageConstant: Option[MessageConstant.MessageConstant], shortError: Option[Error.ShortError])
-
-  case class MsgConstntsResponse(messageConstants: Seq[MessageConstant.MessageConstant], count: Integer)
 
 }

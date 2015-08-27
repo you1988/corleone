@@ -1,0 +1,100 @@
+@* TranslationCreationForm Template File *@
+@(message: models.MessageConstant.MessageConstant,languages:Seq[String] )
+@import scala.Predef; var count = 1
+<div class="col-md-3 aside">
+</div>
+<div class="col-md-6 padding-zero">
+	<form action="update_translation" method="post" onsubmit="return validateCreationForm()">
+	
+		<div class="row creation-component-zero">
+			<div class="col-md-2 creation-label-zero">
+					<label class="control-label creation-control-label">Key:</label>
+			</div>
+			<div class="col-md-10 creation-input-div-zero">
+					<input class="form-control creation-input-zero" type="text" name="key" id="translation_key" value="@message.key" readonly="readonly">  </input>
+			</div>
+		</div>
+				@message.translations.map { translation => 
+		  <div  class="row creation-component-zero" >
+			<div class="col-md-2 creation-language-zero">
+				<select id="select_@count" name="language" value="@translation.languageCode">
+				@languages.map { language => 
+				    <option @if(language==translation.languageCode){ selected="selected" }  value="@language">@language</option>
+				}
+				</select>
+
+ 			</div>
+				<div class="col-md-9 creation-input-div-zero">
+					<input id="id="message_value_@count" class="form-control creation-input-zero" type="text" placeholder="Add your translation" name="translationsmessage" value="@translation.message" required> </input>
+				    <input id="language_value_@count" name="translationslanguage" type="hidden" value="@translation.languageCode" required></input>
+				</div>
+							<div id ="language_@count" class="col-md-1 translation-trash-div" name ="translation" onclick="deletLanguage(this.id)">
+						<button id="translation_remove_button" type="button"
+							class="btn btn-default trash-button"><span id="span_language_0" class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
+							
+			</div>
+				
+			</div>
+			@{count+=1}
+			}
+
+		  <div  class="row creation-component-zero" >
+			<div class="col-md-2 creation-language-zero">
+				<select id="select_@count">
+				<option value=""></option>
+				@languages.map { language => 
+				    <option value="@language">@language</option>
+				}
+				</select>
+
+ 			</div>
+				<div class="col-md-9 creation-input-div-zero">				
+				   <input id="message_value_@count" class="form-control creation-input-zero" type="text" placeholder="Add your translation"> </input>
+				    <input id="language_value_@count" type="hidden"></input>
+				</div>
+							<div id ="language_@count" class="col-md-1 translation-trash-div" onclick="addLanguage(this.id)">
+						<button id="translation_remove_button" type="button"
+							class="btn btn-default trash-button"><span id="span_language_0" class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
+							
+			</div>
+				
+			</div>
+			
+	
+			
+			<div class="row creation-component-zero ">
+				<div class="col-md-2 creation-label-zero">
+					<label class="control-label creation-control-label">Tags:</label>
+				</div>
+				<div class="col-md-10 creation-input-div-zero">
+						<div class="form-control creation-input-zero" id="tags-span-container">
+							<div id="tags-collector" class="inlin">
+							@{count=1}
+							@message.tags.map { tag => <span class='tag-span' id="parent_@count"> &nbsp; <span
+											contenteditable="false" class="label label-success" id="PACK"><input
+												readonly="readonly" class="input-transparent" type="hidden"
+												name='tags' value="@tag">@tag&nbsp;<span
+												id="@count" contenteditable="false"
+												class="hover-remove glyphicon glyphicon-remove"
+												onclick="delet(this.id)"> </span> </span>
+										</span> 
+										@{count+=1}
+										}
+						    </div>
+							<div class="inlin">
+								&nbsp <input id="tag-input" autocomplete="on" class="autocomplete tag-text" type="text"/>
+							</div>
+						</div>
+				</div>
+			</div>
+			<div class="row create-div-top">
+			<div class="col-md-12">
+						<button id="translation_create_button" type="submit"
+							class="btn btn-default create-button"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span></button>
+								<button id="translation_create_button" type="submit"
+							class="btn btn-default create-button"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
+			</div>
+			</div>
+</form>
+</div>
+		

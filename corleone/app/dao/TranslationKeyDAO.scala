@@ -1,3 +1,4 @@
+package dao
 import models.Tables.TranslationKeyTable
 import models.{TranslationKey, Tables}
 import helpers.PostgresDriverExtended.api._

@@ -1,3 +1,4 @@
+package dao
 import helpers.PostgresDriverExtended.api._
 import models.Tables.TranslationMessageTable
 import models._
@@ -26,6 +27,7 @@ class TranslationMessageDAO{
     tm <- translationMessageTable if tm.value === value && tm.isActive
     tk <- translationKeyTable if tm.translationKeyId === tk.id
   } yield (tk)).result.head) finally db.close()
+  
   
   
 }
