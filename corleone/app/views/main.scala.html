@@ -53,10 +53,17 @@
 	</nav>
 
 	<div class="container col-md-12" id="container">
+
  	@content
 	</div>
 	<div class="container col-md-12" >
 	<div class="col-md-3 aside">
+
+		<select id="tags_list" class="hidden">
+			@tags.map { tag =>
+			<option value="@tag">@tag</option>
+			}
+		</select>
 </div>
 <div class="col-md-6 padding-zero" id="notification">
 @notification
@@ -73,17 +80,7 @@
 <script src="@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))"></script>
 <script src="@routes.WebJarAssets.at(WebJarAssets.locate("jquery-ui.min.js"))"></script>
 <script src="@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.js"))"></script>
-
 <script src="@routes.Assets.versioned("assets/CorleonModel.js")"></script>
-<script type="text/javascript" id="myscript">
-var tags =[];
-@tags.map { tag => 
-tags.push("@tag");
-}
-model.tags= tags;
-</script>
-
-
 <script src="@routes.Assets.versioned("assets/CorleonController.js")"></script>
 <script src="@routes.Assets.versioned("assets/LanguageSelectComponent.js")"></script>
 <script src="@routes.Assets.versioned("assets/TagsComponent.js")"></script>

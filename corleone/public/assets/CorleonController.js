@@ -59,10 +59,13 @@ function buildError(errorMsg) {
 	"<span class=\"glyphicon glyphicon-exclamation-sign\" aria-hidden=\"true\"></span>"+
 	"<span class=\"sr-only\">Error:</span>" + errorMsg+
 	"</div>";
-	// </div>
-
 }
-$('select').each(function() {
+
+$("#tags_list option").each(function()
+{
+    model.tags.push($(this).val())
+});
+$('.select_language').each(function() {
 
 	var arr = $(this).attr('id').split('_');
 	var index = arr[1];

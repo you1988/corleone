@@ -306,7 +306,16 @@ input[type="radio"] {
 		padding-right: 0px !important;
 	}
 }
-
+.hidden{
+	visibility: hidden;
+    display:None;
+}
+.select_language{
+}
+.add-Language-selector{
+}
+.delete-Language-selector{
+}
 
 .s-hidden {
 	visibility: hidden;
