@@ -14,7 +14,7 @@
 				</h4>
 			</div>
 			<div id="collapse@count" class="panel-collapse collapse @if(count==1){in} ">
-				<form action="update_translation_form" method="post">
+				<form action="update-translation-form" method="POST">
 				<input type="hidden" value ="@message.key" name="key"></input>
 			      @message.translations.map{ translation =>
 					<div class="row creation-component-zero">

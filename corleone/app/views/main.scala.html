@@ -21,7 +21,7 @@
 		
 			<div class="navbar-left col-md-3 ">
 			</div>
-			<form class="navbar-left col-md-6" role="search"  action="search_translation" method="post">
+			<form class="navbar-left col-md-6" role="search"  action="search-translation" method="POST">
 				<div class="row">
 					<div class="searchdivtop">
 						<button id="translation_search_button" type="submit"
@@ -41,7 +41,7 @@
 				</div>
 			</form>
 			<div class="navbar-right col-md-3 create-div-top">
-						<form role="search"  action="create_form_translation" method="post">
+						<form role="search"  action="create-form-translation" method="POST">
 			
 				<div class="input-group create-div">
 						<button id="translation_create_button" type="submit"
@@ -76,16 +76,11 @@
 
 <script src="@routes.Assets.versioned("assets/CorleonModel.js")"></script>
 <script type="text/javascript" id="myscript">
-      
 var tags =[];
 @tags.map { tag => 
 tags.push("@tag");
 }
-
-    	model.tags= tags;
-    	
-
-
+model.tags= tags;
 </script>
 
 
