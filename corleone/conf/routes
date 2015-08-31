@@ -23,7 +23,7 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 GET     /webjars/*file              controllers.WebJarAssets.at(file)
 
 # Translation management Api
-POST    /create-translation                 @controllers.Application.createTranslation()
+POST    /create-translation          @controllers.Application.createTranslation()
 POST    /search-translation          @controllers.Application.search()
 POST    /create-form-translation     @controllers.Application.createForm()
 POST    /update-translation-form     @controllers.Application.updateForm()
