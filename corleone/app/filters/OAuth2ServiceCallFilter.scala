@@ -111,12 +111,13 @@ class OAuth2ServiceCallFilter @Inject()(oauth2: OAuth2Helper) extends Filter {
     if (response.status == Status.OK) {
       // at the moment, we can only check if the user is an employee. In the future, it will be possible to assign
       // more scopes to an user
+      Logger.debug("response " + response.json);
       val realmOption = (response.json \ "realm").asOpt[String]
       realmOption match {
         case Some(realm) => {
 
           Logger.debug("realm is " + realm);
-          realm == "services"
+          realm.matches( """[/]?services""")
         }
         case _ => false
       }
