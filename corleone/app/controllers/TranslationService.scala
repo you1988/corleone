@@ -298,14 +298,28 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
   }
   private def handleFailure(request: Request[Any], error: Either[JsError, ShortError]): Result = {
     error match {
-      case Left(jsError) => Status(422)(Json.toJson(Error.Error(request.uri, 422, Constants.REQUEST_NOT_VALID_ERROR_TITLE, JsError.toJson(jsError).toString(), request.uri)))
+      case Left(jsError) => Status(422)(Json.toJson(Error.Error(request.uri, 422, Constants.REQUEST_NOT_VALID_ERROR_TITLE, JsError.toJson(jsError).toString(), request.uri))).withHeaders(
+        CONTENT_TYPE -> "application/problem+json"
+      )
       case Right(shortError) => shortError match {
-        case shortError: MessageConstantViolatedConstraintError => Status(409)(Json.toJson(Error.Error(request.uri, 409, Constants.REQUEST_MESSAGE_CONSTANT_ALREADY_EXIST_ERROR_TITLE, shortError.detail, request.uri)))
-        case shortError: TimeOutError => Status(503)(Json.toJson(Error.Error(request.uri, 503, Constants.REQUEST_SERVICE_UNAVAILABLE_ERROR_TITLE, shortError.detail, request.uri)))
-        case shortError: NotHandledError => Status(500)(Json.toJson(Error.Error(request.uri, 503, Constants.REQUEST_UNEXPECTED_EXCEPTION_ERROR_TITLE, shortError.detail, request.uri)))
-        case shortError: OutOfDateError => Status(412)
-        case shortError: NotFoundError => Status(404)(Json.toJson(Error.Error(request.uri, 404, shortError.title, shortError.detail, request.uri)))
-        case shortError: MalFormedError => Status(400)(Json.toJson(Error.Error(request.uri, 400, shortError.title, shortError.detail, request.uri)))
+        case shortError: MessageConstantViolatedConstraintError => Status(409)(Json.toJson(Error.Error(request.uri, 409, Constants.REQUEST_MESSAGE_CONSTANT_ALREADY_EXIST_ERROR_TITLE, shortError.detail, request.uri))).withHeaders(
+          CONTENT_TYPE -> "application/problem+json"
+        )
+        case shortError: TimeOutError => Status(503)(Json.toJson(Error.Error(request.uri, 503, Constants.REQUEST_SERVICE_UNAVAILABLE_ERROR_TITLE, shortError.detail, request.uri))).withHeaders(
+          CONTENT_TYPE -> "application/problem+json"
+        )
+        case shortError: NotHandledError => Status(500)(Json.toJson(Error.Error(request.uri, 503, Constants.REQUEST_UNEXPECTED_EXCEPTION_ERROR_TITLE, shortError.detail, request.uri))).withHeaders(
+          CONTENT_TYPE -> "application/problem+json"
+        )
+        case shortError: OutOfDateError => Status(412).withHeaders(
+          CONTENT_TYPE -> "application/problem+json"
+        )
+        case shortError: NotFoundError => Status(404)(Json.toJson(Error.Error(request.uri, 404, shortError.title, shortError.detail, request.uri))).withHeaders(
+          CONTENT_TYPE -> "application/problem+json"
+        )
+        case shortError: MalFormedError => Status(400)(Json.toJson(Error.Error(request.uri, 400, shortError.title, shortError.detail, request.uri))).withHeaders(
+          CONTENT_TYPE -> "application/problem+json"
+        )
       }
     }
   }
@@ -318,18 +332,20 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
 
         Status(map.get(update).get)(Json.toJson(hATEOAS)).withHeaders(
           CACHE_CONTROL -> "max-age=3600",
-          ETAG -> messageConstantHash)
+          ETAG -> messageConstantHash,
+          CONTENT_TYPE -> "application/x.zalando.logistics.translations+json"
+        )
       case "GET" => {
         var result = if (!limit.isEmpty) Status(map.get("GET").get)(Json.toJson(Response.SearchResponse(messageConstant, hATEOAS))) else Status(map.get("GET").get)(Json.toJson(Response.MessageConstantResponse(messageConstant.headOption.get, hATEOAS)))
 
-        var headers: Seq[(String, String)] = Seq(CACHE_CONTROL -> "max-age=3600", ETAG -> messageConstantHash)
+        var headers: Seq[(String, String)] = Seq(CACHE_CONTROL -> "max-age=3600", ETAG -> messageConstantHash,CONTENT_TYPE -> "application/x.zalando.logistics.translations+json")
 
         if (!limit.isEmpty) headers = headers :+ "X-Remainder-Count" -> (if (messageConstant.size < limit.get) 0 else messageConstant.size - limit.get).toString()
 
         result.withHeaders(headers: _*)
       }
-      case "POST" => Status(map.get("POST").get)(Json.toJson(hATEOAS))
-      case "DELETE" => Status(map.get("DELETE").get)(Json.toJson(hATEOAS))
+      case "POST" => Status(map.get("POST").get)(Json.toJson(hATEOAS)).withHeaders(CONTENT_TYPE -> "application/x.zalando.logistics.translations+json")
+      case "DELETE" => Status(map.get("DELETE").get)(Json.toJson(hATEOAS)).withHeaders(CONTENT_TYPE -> "application/x.zalando.logistics.translations+json")
 
 
     }
@@ -345,7 +361,9 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
       case _ => Some(Future {
         Status(412)(Json.toJson(Response.MessageConstantResponse(upTodateMessage, hATEOAS))).withHeaders(
           CACHE_CONTROL -> "max-age=36",
-          ETAG -> messageConstantUpdatedHash)
+          ETAG -> messageConstantUpdatedHash,
+        CONTENT_TYPE -> "application/problem+json"
+        )
       })
     }
   }
@@ -354,7 +372,7 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
     val hATEOAS = Helper.getHATEOAS(request.method, messages, request.host);
     val hash = Codecs.sha1(messages.toString());
     request.headers.get(IF_NONE_MATCH).collect {
-      case value if (hash.equals(value)) => NotModified
+      case value if (hash.equals(value)) => NotModified.withHeaders(CONTENT_TYPE -> "application/x.zalando.logistics.translations+json")
     } getOrElse handleSuccess(request, messages, limit)
 
   }

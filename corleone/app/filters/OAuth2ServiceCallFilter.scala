@@ -92,11 +92,12 @@ class OAuth2ServiceCallFilter @Inject()(oauth2: OAuth2Helper) extends Filter {
       Logger.info("supplied access token IS valid and access is granted")
 
       // apply filter following in filter chain
-      nextFilter(requestHeader).map { result =>
-        result.withSession(requestHeader.session)
-          .withCookies(requestHeader.cookies.toList: _*)
-          .withHeaders(requestHeader.headers.headers: _*)
-      }
+      nextFilter(requestHeader)
+      //.map { result => result}
+       // result.withSession(requestHeader.session)
+         // .withCookies(requestHeader.cookies.toList: _*)
+        //.withHeaders(requestHeader.headers.headers: _*)
+      //}
     }
     else {
       Logger.info("access is not granted -> respond with Forbidden (403)")
@@ -112,7 +113,11 @@ class OAuth2ServiceCallFilter @Inject()(oauth2: OAuth2Helper) extends Filter {
       // more scopes to an user
       val realmOption = (response.json \ "realm").asOpt[String]
       realmOption match {
-        case Some(realm) => realm == "services"
+        case Some(realm) => {
+
+          Logger.debug("realm is " + realm);
+          realm == "services"
+        }
         case _ => false
       }
     }
