@@ -128,6 +128,33 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
       }
   }
 
+/*
+  translationManager.deleteMessageConstant(message.key).flatMap{ errors=> errors match{
+    case None => Ok(views.html.main(tags)(null)(views.html.Succes("Message Updated")));
+    case Some(error) => handleFailure(Right(error),tags)
+  }
+  }
+  */
+  def deleteTranslation = Action.async {
+    req =>
+      val map: Map[String, Seq[String]] = req.body.asFormUrlEncoded.getOrElse(Map())
+      translationManager.getAllTags().flatMap { tags =>
+        tags match {
+          case Right(err) => Future{Ok(views.html.main(Seq())(null)(null))}
+          case Left(tags) => Helper.validatCreateRequest(map) match {
+            case Left(message) =>translationManager.deleteMessageConstant(message.key).map { errors =>
+              errors match{
+              case None => Ok(views.html.main(tags)(null)(views.html.Succes("Message Deleted")))
+              case Some(error) => handleFailure(Right(error),tags)
+            }
+            }
+            case Right(errors) =>Future{handleFailure(Left(errors),tags)}
+          }
+        }
+      }
+  }
+
+
   def createTranslation = Action.async { req =>
     val map: Map[String, Seq[String]] = req.body.asFormUrlEncoded.getOrElse(Map())
     translationManager.getAllTags().flatMap { tags =>

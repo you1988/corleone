@@ -54,6 +54,9 @@ function validateCreationForm() {
 	}
 	return confirm('Do you want to confirm your action?');
 }
+function deleteConfirmation() {
+	return confirm('Do you want to delete this message constant?');
+}
 function buildError(errorMsg) {
 	return "<div>"+
 	"<span class=\"glyphicon glyphicon-exclamation-sign\" aria-hidden=\"true\"></span>"+
@@ -64,6 +67,12 @@ function buildError(errorMsg) {
 $("#tags_list option").each(function()
 {
     model.tags.push($(this).val())
+});
+
+$('.delete-confirmation').each(function() {
+$(this).click(function(){
+	return confirm('Do you want to delete this message constant?');
+});
 });
 $('.select_language').each(function() {
 
