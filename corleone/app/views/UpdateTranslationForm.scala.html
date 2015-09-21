@@ -4,7 +4,7 @@
 <div class="col-md-3 aside">
 </div>
 <div class="col-md-6 padding-zero">
-	<form action="update_translation" method="post" onsubmit="return validateCreationForm()">
+	<form action="update-translation" method="POST" onsubmit="return validateCreationForm()">
 	
 		<div class="row creation-component-zero">
 			<div class="col-md-2 creation-label-zero">
@@ -17,7 +17,7 @@
 				@message.translations.map { translation => 
 		  <div  class="row creation-component-zero" >
 			<div class="col-md-2 creation-language-zero">
-				<select id="select_@count" name="language" value="@translation.languageCode">
+				<select id="select_@count" name="language" class="select_language" value="@translation.languageCode">
 				@languages.map { language => 
 				    <option @if(language==translation.languageCode){ selected="selected" }  value="@language">@language</option>
 				}
@@ -28,7 +28,7 @@
 					<input id="id="message_value_@count" class="form-control creation-input-zero" type="text" placeholder="Add your translation" name="translationsmessage" value="@translation.message" required> </input>
 				    <input id="language_value_@count" name="translationslanguage" type="hidden" value="@translation.languageCode" required></input>
 				</div>
-							<div id ="language_@count" class="col-md-1 translation-trash-div" name ="translation" onclick="deletLanguage(this.id)">
+							<div id ="language_@count" class="col-md-1 translation-trash-div delete-Language-selector" name ="translation">
 						<button id="translation_remove_button" type="button"
 							class="btn btn-default trash-button"><span id="span_language_0" class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
 							
@@ -40,7 +40,7 @@
 
 		  <div  class="row creation-component-zero" >
 			<div class="col-md-2 creation-language-zero">
-				<select id="select_@count">
+				<select id="select_@count" class="select_language">
 				<option value=""></option>
 				@languages.map { language => 
 				    <option value="@language">@language</option>
@@ -52,7 +52,7 @@
 				   <input id="message_value_@count" class="form-control creation-input-zero" type="text" placeholder="Add your translation"> </input>
 				    <input id="language_value_@count" type="hidden"></input>
 				</div>
-							<div id ="language_@count" class="col-md-1 translation-trash-div" onclick="addLanguage(this.id)">
+							<div id ="language_@count" class="col-md-1 translation-trash-div add-Language-selector">
 						<button id="translation_remove_button" type="button"
 							class="btn btn-default trash-button"><span id="span_language_0" class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
 							
@@ -89,10 +89,11 @@
 			</div>
 			<div class="row create-div-top">
 			<div class="col-md-12">
-						<button id="translation_create_button" type="submit"
-							class="btn btn-default create-button"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span></button>
-								<button id="translation_create_button" type="submit"
-							class="btn btn-default create-button"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
+				<button id="translation_reset_button" type="reset"
+						class="btn btn-default create-button"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
+
+				<button id="translation_create_button" type="submit"
+								class="btn btn-default create-button"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span></button>
 			</div>
 			</div>
 </form>

@@ -3,19 +3,19 @@
 # ~~~~
 
 # Home page
-GET        /                       controllers.Application.index
-GET        /heartbeat              controllers.HealthCheckController.heartbeat
+GET        /                       @controllers.Application.index()
+GET        /heartbeat              @controllers.HealthCheckController.heartbeat
 
 
-GET        /oauth_callback         controllers.OAuth2Controller.callback
+GET        /oauth-callback         controllers.OAuth2Controller.callback
 
 #Corleone service 
-GET     /translations               @controllers.TranslationService.getTranslaions(languageCodes:Option[Seq[String]],tags:Option[Seq[String]],limit:Option[Integer] ?= Some(1000),after:Option[String],before:Option[String])
-POST    /translations               @controllers.TranslationService.createTranslaions()
-GET     /translations/:key          @controllers.TranslationService.getTranslation(key:String,languageCodes:Option[Seq[String]])
-DELETE  /translations/:key          @controllers.TranslationService.deleteTranslation(key:String)
-PATCH   /translations/:key          @controllers.TranslationService.patchTranslation(key:String)
-PUT     /translations/:key          @controllers.TranslationService.putTranslation(key:String)
+GET     /api/translations               @controllers.TranslationService.getTranslaions(languageCodes:Option[Seq[String]],tags:Option[Seq[String]],limit:Option[Integer] ?= Some(1000),after:Option[String],before:Option[String])
+POST    /api/translations               @controllers.TranslationService.createTranslaions()
+GET     /api/translations/:key          @controllers.TranslationService.getTranslation(key:String,languageCodes:Option[Seq[String]])
+DELETE  /api/translations/:key          @controllers.TranslationService.deleteTranslation(key:String)
+PATCH   /api/translations/:key          @controllers.TranslationService.patchTranslation(key:String)
+PUT     /api/translations/:key          @controllers.TranslationService.putTranslation(key:String)
 
 
 # Map static resources from the /public folder to the /assets URL path
@@ -23,9 +23,9 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 GET     /webjars/*file              controllers.WebJarAssets.at(file)
 
 # Translation management Api
-POST    /translation               controllers.Application.createTranslation
-#GET     /translations/:constantKey  controllers.Translations.show(constantKey: String)
-POST    /search_translation          controllers.Application.search
-POST    /create_form_translation     controllers.Application.createForm
-POST    /update_translation_form          controllers.Application.updateForm
-POST    /update_translation          controllers.Application.updateTranslation
+POST    /create-translation          @controllers.Application.createTranslation()
+POST    /search-translation          @controllers.Application.search()
+POST    /create-form-translation     @controllers.Application.createForm()
+POST    /update-translation-form     @controllers.Application.updateForm()
+POST    /update-translation          @controllers.Application.updateTranslation()
+POST    /delete-translation          @controllers.Application.deleteTranslation()

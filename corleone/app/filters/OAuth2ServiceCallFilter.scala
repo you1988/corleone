@@ -92,11 +92,12 @@ class OAuth2ServiceCallFilter @Inject()(oauth2: OAuth2Helper) extends Filter {
       Logger.info("supplied access token IS valid and access is granted")
 
       // apply filter following in filter chain
-      nextFilter(requestHeader).map { result =>
-        result.withSession(requestHeader.session)
-          .withCookies(requestHeader.cookies.toList: _*)
-          .withHeaders(requestHeader.headers.headers: _*)
-      }
+      nextFilter(requestHeader)
+      //.map { result => result}
+       // result.withSession(requestHeader.session)
+         // .withCookies(requestHeader.cookies.toList: _*)
+        //.withHeaders(requestHeader.headers.headers: _*)
+      //}
     }
     else {
       Logger.info("access is not granted -> respond with Forbidden (403)")
@@ -110,9 +111,14 @@ class OAuth2ServiceCallFilter @Inject()(oauth2: OAuth2Helper) extends Filter {
     if (response.status == Status.OK) {
       // at the moment, we can only check if the user is an employee. In the future, it will be possible to assign
       // more scopes to an user
+      Logger.debug("response " + response.json);
       val realmOption = (response.json \ "realm").asOpt[String]
       realmOption match {
-        case Some(realm) => realm == "services"
+        case Some(realm) => {
+
+          Logger.debug("realm is " + realm);
+          realm.matches( """[/]?services""")
+        }
         case _ => false
       }
     }

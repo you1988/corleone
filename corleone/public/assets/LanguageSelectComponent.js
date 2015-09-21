@@ -8,7 +8,8 @@ if(!$("#language_value_" +arr[1]).val()){
 	isValid=false;
 	}
 	return isValid;
-}	
+}
+
 function addLanguage(id) {
 	if(!validateLanguage(id)) return;
 	
@@ -19,7 +20,7 @@ function addLanguage(id) {
 		var index = parseInt(arr[1]) +1;
 		var result =  " <div class=\"row creation-component-zero\">"+
 			"<div class=\"col-md-2 creation-language-zero\">"+
-				"<select id=\"select_"+index+"\">";
+				"<select  class=\"select_language\" id=\"select_"+index+"\">";
 		var selectId='select_'+arr[1];
 		$("#" + selectId+ " option").each(function(){
 			result+="<option value=\""+$(this).val()+"\">" +$(this).text() +"</option>";
@@ -30,7 +31,7 @@ function addLanguage(id) {
 					"<input id=\"message_value_"+index+"\" class=\"form-control creation-input-zero\" type=\"text\" placeholder=\"Add your translation\">"+ "</input>"+
 					"<input id=\"language_value_"+index+"\"  type=\"hidden\">"+ "</input>"+
 				"</div>"+
-				"<div id =\"language_"+index+ "\" class=\"col-md-1 translation-trash-div\" onclick=\"addLanguage(this.id)\">"+
+				"<div id =\"language_"+index+ "\" class=\"col-md-1 translation-trash-div add-Language-selector\">"+
 				     "<button id=\"translation_remove_button\" type=\"button\""+
 							"class=\"btn btn-default trash-button\">"+"<span id =\"span_language_"+index+ "\"class=\"glyphicon glyphicon-plus\" aria-hidden=\"true\">"+"</span>"+"</button>"+
 			    "</div>"+
@@ -40,7 +41,13 @@ function addLanguage(id) {
 		el.after(result);
 		var k = "#span_" + id;
 		$(k).removeClass("glyphicon-trash").addClass("glyphicon-trash");
-		$(m).attr("onclick","deletLanguage(this.id)");
+		 $("#language_"+index).click(function(){
+            addLanguage($(this).attr("id"));
+          });
+        $(m).removeClass("add-Language-selector").addClass("delete-Language-selector")
+		$(m).click(function(){
+                 $(this).parent().remove();
+               });
 		$("#select_"+index).each(function () {
 
 		    // Cache the number of options
@@ -113,4 +120,19 @@ $("#" + id).parent().remove();
 			
 	}
 	;
+
+$('.delete-Language-selector').each(function()
+ {
+  $(this).click(function(){
+    $(this).parent().remove();
+  });
+ }
+);
+$('.add-Language-selector').each(function()
+ {
+  $(this).click(function(){
+    addLanguage($(this).attr("id"));
+  });
+ }
+);
 

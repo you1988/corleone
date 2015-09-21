@@ -33,7 +33,7 @@ class OAuth2Helper @Inject() (credentialsProvider: OAuth2CredentialsProvider ) {
   def requestAccessToken(oauth2Code: String, wasAlreadyCalledBefore: Boolean = false): Future[WSResponse] = {
     val credentials = credentialsProvider.get
     val callbackUrl = OAuth2Constants.callbackUrl
-    val payload = s"grant_type=authorization_code&code=$oauth2Code&realm=employees&redirect_uri=$callbackUrl"
+    val payload = s"grant_type=authorization_code&code=$oauth2Code&redirect_uri=$callbackUrl"
 
     val futureResponse = WS.url(OAuth2Constants.accessTokenUrl)
       .withHeaders(("Content-Type", "application/x-www-form-urlencoded"))

@@ -3,7 +3,7 @@
 <div class="col-md-6 padding-zero">
 	<div>
 
-	<form action="translation" data-toggle="validator"  onsubmit="return createConfirm()" id="profileForm" method="post">
+	<form action="create-translation" data-toggle="validator"  onsubmit="return validateCreationForm()" id="profileForm" method="POST">
 
 		<div class="row creation-component-zero">
 			<div class="col-md-2 creation-label-zero">
@@ -17,7 +17,7 @@
 
 		<div class="row creation-component-zero">
 			<div id ="div_select_0" class="col-md-2 creation-language-zero">
-				<select id="select_0">
+				<select id="select_0" class="select_language">
 					<option value=""></option> @languages.map{ language =>
 					<option value="@language">@language</option> }
 				</select>
@@ -31,8 +31,7 @@
 					id="language_value_0"  type="hidden" value=""
 					> </input>
 			</div>
-			<div id="language_0" class="col-md-1 translation-trash-div"
-				onclick="addLanguage(this.id)">
+			<div id="language_0" class="col-md-1 translation-trash-div add-Language-selector">
 				<button id="translation_remove_button" type="button"
 					class="btn btn-default trash-button">
 					<span id="span_language_0" class="glyphicon glyphicon-plus"
@@ -61,13 +60,13 @@
 		</div>
 		<div class="row create-div-top">
 			<div class="col-md-12">
-				<button id="translation_create_button"  type="submit"
+				<button id="translation_reset_button"  type="reset"
 					class="btn btn-default create-button">
-					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+					<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
 				</button>
 				<button id="translation_create_button" type="submit"
 					class="btn btn-default create-button" >
-					<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
 				</button>
 			</div>
 		</div>

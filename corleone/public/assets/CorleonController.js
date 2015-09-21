@@ -54,15 +54,27 @@ function validateCreationForm() {
 	}
 	return confirm('Do you want to confirm your action?');
 }
+function deleteConfirmation() {
+	return confirm('Do you want to delete this message constant?');
+}
 function buildError(errorMsg) {
 	return "<div>"+
 	"<span class=\"glyphicon glyphicon-exclamation-sign\" aria-hidden=\"true\"></span>"+
 	"<span class=\"sr-only\">Error:</span>" + errorMsg+
 	"</div>";
-	// </div>
-
 }
-$('select').each(function() {
+
+$("#tags_list option").each(function()
+{
+    model.tags.push($(this).val())
+});
+
+$('.delete-confirmation').each(function() {
+$(this).click(function(){
+	return confirm('Do you want to delete this message constant?');
+});
+});
+$('.select_language').each(function() {
 
 	var arr = $(this).attr('id').split('_');
 	var index = arr[1];

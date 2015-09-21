@@ -35,7 +35,7 @@ import play.api.http._
  */
 class OAuth2Filter @Inject()(oauth2: OAuth2Helper) extends Filter {
   val NO_TOKEN: String = "NO_TOKEN"
-  val EXCLUDED_REQUEST_PATHS: Set[String] = Set("/oauth_callback", " /heartbeat", "/api")
+  val EXCLUDED_REQUEST_PATHS: Set[String] = Set("/oauth-callback", "/heartbeat", "/api")
   val customExcludedRequestPaths = oauth2.extractConfiguredValueList("oauth2.excluded.paths") ++
     oauth2.extractConfiguredValueList("oauth2.service.paths")
 
@@ -193,7 +193,7 @@ class OAuth2Filter @Inject()(oauth2: OAuth2Helper) extends Filter {
         nextFilter(requestHeader).map { result =>
           result.withSession(requestHeader.session)
             .withCookies(requestHeader.cookies.toList: _*)
-            .withHeaders(requestHeader.headers.headers: _*)
+            //.withHeaders(requestHeader.headers.headers: _*)
         }
       }
     }

@@ -14,7 +14,7 @@
 				</h4>
 			</div>
 			<div id="collapse@count" class="panel-collapse collapse @if(count==1){in} ">
-				<form action="update_translation_form" method="post">
+				<form action="update-translation-form" method="POST">
 				<input type="hidden" value ="@message.key" name="key"></input>
 			      @message.translations.map{ translation =>
 					<div class="row creation-component-zero">
@@ -49,6 +49,8 @@
 							<div class="col-md-12">
 								<button id="translation_create_button" type="submit"
 															class="btn btn-default create-button"><span class="glyphicon glyphicon-edit" aria-hidden="true"></span></button>
+								<button id="translation_delete_button" type="submit" formaction="delete-translation" onsubmit="return deleteConfirmation()"
+										class="btn btn-default create-button delete-confirmation"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
 							</div>
 						</div>
 					</div>		   
