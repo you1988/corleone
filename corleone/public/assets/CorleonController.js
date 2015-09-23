@@ -54,6 +54,46 @@ function validateCreationForm() {
 	}
 	return confirm('Do you want to confirm your action?');
 }
+function validateImportForm() {
+	var result = true;
+	var errors = "<div class=\"alert alert-danger\" role=\"alert\">"
+	var t = $("input[name='language']");
+	var m = $("input[name='csv']");
+	if (!t.val()) {
+		errors += buildError("You should specify language.")
+		result = false;
+	}
+	if (!m.val()) {
+		result = false;
+		errors += buildError("You should choose a csv file.")
+	}
+
+	errors += "</div>"
+	if (!result) {
+		$("#notification").empty();
+		$("#notification").append(errors);
+		return false;
+	}
+	return confirm('Do you want to upload the csv file?');
+}
+function validateExportForm() {
+	var result = true;
+	var errors = "<div class=\"alert alert-danger\" role=\"alert\">"
+	var m = $("input[name='tag']");
+	if (!m.val()) {
+		result = false;
+		errors += buildError("You should select a tag.")
+	}
+
+	errors += "</div>"
+	if (!result) {
+		$("#notification").empty();
+		$("#notification").append(errors);
+		return false;
+	}
+	return true;
+}
+
 function deleteConfirmation() {
 	return confirm('Do you want to delete this message constant?');
 }
@@ -213,3 +253,16 @@ $("#csv_file").on("change", function(event){
     $("#uploadFile").val(this.value);
 });
 
+$("#importForm").on("submit", function(event){
+                              return  validateImportForm();
+                           });
+
+$("#exportForm").on("submit", function(event){
+                              return  validateExportForm();
+                           });
+$("#createForm").on("submit", function(event){
+                              return  validateCreationForm();
+                           });
+$("#updateForm").on("submit", function(event){
+                              return  validateCreationForm();
+                           });
