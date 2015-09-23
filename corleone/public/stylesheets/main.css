@@ -312,6 +312,9 @@ input[type="radio"] {
 }
 .select_language{
 }
+.select_tag{
+}
+
 .add-Language-selector{
 }
 .delete-Language-selector{
@@ -434,4 +437,31 @@ langauge-select-ul-block {
 
 .panel-corner-none {
 	border-radius: 0px !important;
+}
+
+
+
+.fileUpload {
+    position: relative;
+    margin: 0 !important;
+    height: 34px !important;
+}
+
+.fileUpload span{
+ display:block;
+       margin-top:8px;
+}
+.fileUpload input.upload {
+    height: inherit !important;
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0;
+    filter: alpha(opacity=0);
+    border-radius: 0px !important;
+    border: none !important;
 }
