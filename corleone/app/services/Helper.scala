@@ -1,6 +1,8 @@
 package services
 
 
+import java.awt.im.InputMethodRequests
+
 import models._
 import play.Logger
 
@@ -47,6 +49,26 @@ object Helper {
       }
     }
   }
+
+
+  def validatExportRequest(params: Map[String, Seq[String]]):Either[Requests.ExportRequest,Seq[String]] = {
+    var seq = Seq[String]()
+    val tag = params.get("tag");
+    tag match {
+      case None => seq = seq :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("tag")
+      case Some(keyValue) =>      if (!tag.get(0).matches( """[a-z_A-Z0-9]*""")) {
+        seq = seq :+Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_FIELD_FORMAT_UNSUPORTED_ERROR_MESSAGE.stripMargin.format("tag")
+      }
+    }
+
+
+    if (seq.length == 0) {
+
+
+      Left(Requests.ExportRequest(tag.get(0),";"))
+    } else Right(seq)
+  }
+
 
   def validatCreateRequest(params: Map[String, Seq[String]]):Either[MessageConstant.MessageConstant,Seq[String]] = {
     Logger.error("test " + params.toString())
