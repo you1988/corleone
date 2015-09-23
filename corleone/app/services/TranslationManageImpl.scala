@@ -303,15 +303,14 @@ class TranslationManageImpl extends TranslationManage {
       else {
 
         Left(messageConstants.map(messageConstant => {
-          Logger.error("trans " + language.toString)
-          val updatedTransaltions:Seq[Translation.Translation]=messageConstant.translations.map(translation=> {
-            Logger.error("translll " + translation.languageCode.toString)
+          var updatedTransaltions:Seq[Translation.Translation]=messageConstant.translations.map(translation=> {
             if (translation.languageCode.toString.equals(language.toString)) {
-              Logger.error("mmm" + translation.toString)
               translation.copy(message=transaltions.getOrElse(messageConstant.key,translation.message) )
             }
             else translation
           })
+          if(!updatedTransaltions.exists(translation => translation.languageCode.toString.equals(language.toString) && !transaltions.getOrElse(messageConstant.key,"").isEmpty))
+            updatedTransaltions= updatedTransaltions :+ Translation.Translation(language.toString,transaltions.get(messageConstant.key).get)
           messageConstant.copy(translations = updatedTransaltions)}))
       }
     }).recover {

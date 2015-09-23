@@ -2,6 +2,8 @@ package models
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Reads, JsPath, Writes}
 
+import scala.reflect.internal.pickling.Translations
+
 /**
  * Created by ychahbi on 9/21/15.
  */
@@ -13,5 +15,6 @@ object Requests {
   implicit val searchResponseReads: Reads[ExportRequest] = (
     (JsPath \ "tag").read[String] and
       (JsPath \ "delimiter").read[String])(ExportRequest.apply _)
+  case class ImportRequest(language: LanguageCodes.LanguageCode, translations: Map[String,String])
 
 }

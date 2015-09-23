@@ -51,4 +51,11 @@ object Constants {
   val REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE="Message constant %s should not be empty."
   val REQUEST_FIELD_INVALID_VIOLATED_FORMAT_ERROR_MESSAGE="Message constant %s should respect the following regex [a-zA-z_0-9]*."
   val REQUEST_TRANSLATIONS_INVALID_TRANSLITIONS_LANGUAGES_DIFFERENT_ERROR_MESSAGE="The number of messages and language codes is not the same."
+  val REQUEST_FILE_TYPE_IS_NOT_SUPPORTED="The following %s should be a csv file."
+  val REQUEST_FILE_CONTENT_IS_EMPTY="The csv file is empty."
+  val REQUEST_CSV_FILE_CONTENT_IS_NOT_CORRECT="The csv file should contains at least two columns key and %s."
+  val REQUEST_CSV_FILE_CONTENT_IS_NOT_VALID="The csv file contains at least one line with more columns."
+
+  //Regex for csv
+  val REGEX_SPLIT_CSV_FILE=",(?=([^\"]*\"[^\"]*\")*(?![^\"]*\"))"
 }
