@@ -67,6 +67,31 @@ class TranslationManageImpl extends TranslationManage {
     handleSearchQueryResponse(transaction)
   }
 
+
+  /**
+   * This function return :
+   * case languageCodesOp and tagsOp are not empty  : message constants that has at
+   * least one transaltion in one of languageCodesOp and tag in tagsOp.
+   * case languageCodesOp is not empty  : message constants that has at
+   * least one transaltion in one of languageCodesOp.
+   * case tagsOp is not empty  : message constants that has at
+   * least one tag in one of tags.
+   * If languageCodesOp and tagsOp are  empty: all message constants.
+   * @return Message constants respect the previous conditions.
+   *         NotFoundError if no message constant with key and has translation in one of  languageCodes.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+
+  def getTranslationMessages(keys:Seq[String],language:LanguageCodes.LanguageCode,transaltions:Map[String,String]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
+    var searchquery = MessageConstantQueryBuilder.buildSelectAllMessageConstantQuery()
+    searchquery = searchquery.filter(x => (x._1 inSet keys))
+    val transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]] = db.run(searchquery.result)
+    handleSearchQueryResponse(transaction,transaltions,language)
+  }
+
+
+
   /**
    * This function return the message constant mapped to the key
    * @param key The key of the message constant
@@ -128,6 +153,27 @@ class TranslationManageImpl extends TranslationManage {
     ).andThen(MessageConstantQueryBuilder.buildInsertVersioning(messageConstant.key, Operations.MODIFIED)))
       .transactionally)
     handleUpSetAction(messageConstant, updateResult)
+  }
+  /**
+   * This function updates a message constant , process to update a message constant is done in one transaction:
+   *        -Disable the old version of the message constant based on the message constant message key by setting the active propertyof  translations and tags to false.
+   *        -Create a new translation Message by inserting its different properties into the transaltion_tagging ,tansaltion_message and transalation_key tables
+   *         and tag tables case that tag is new.
+   *        -Create a version by inserting a row in version table for versioning the update version of message constant.
+   * @param messageConstants The up to date version of the message constant
+   * @return The updated version if the update transaction is success.
+   *         MessageConstantViolatedConstraintError Case the message constant violate one of the data base constraint.
+   *         TimeOutError if postgres data base return a time out exception.
+   *         NotExpectedError if a problem happen in the database
+   */
+  def updateMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]]= {
+    val updateResult: Future[Unit] = db.run((MessageConstantQueryBuilder.buildDeleteMessagesConstantAction(messageConstants.map(msg=>msg.key)).andThen(MessageConstantQueryBuilder.buildCreateMessageContants(messageConstants))
+      .transactionally))
+      updateResult.map {
+      ex => None
+    }.recover {
+      case ex: Exception => Some(mapExceptionError(ex))
+    }
   }
 
   /**
@@ -236,6 +282,37 @@ class TranslationManageImpl extends TranslationManage {
       if (messageConstants.isEmpty) Right(new NotFoundError(Constants.MESSAGE_CONSTANT_NOT_FOUND_WHITH_TAG.stripMargin.format("tag")))
       else Left(messageConstants)
 
+    }).recover {
+      case ex: Exception => {
+        Logger.error(ex.getMessage)
+        Right(mapExceptionError(ex))
+      }
+    }
+  }
+
+  /**
+   * This function handle search queries response.
+   * @param transaction     The search query result.
+   * @return                The list of message constants resulted from the query search if search query successed
+   *                        Short error if search query failed
+   */
+  private def handleSearchQueryResponse(transaction: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]],transaltions:Map[String,String],language:LanguageCodes.LanguageCode): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
+    transaction.map(res => {
+      val messageConstants = transformTuppleToMessageConstants(res)
+      if (messageConstants.isEmpty) Right(new NotFoundError(Constants.MESSAGE_CONSTANT_NOT_FOUND_WHITH_TAG.stripMargin.format("tag")))
+      else {
+
+        Left(messageConstants.map(messageConstant => {
+          var updatedTransaltions:Seq[Translation.Translation]=messageConstant.translations.map(translation=> {
+            if (translation.languageCode.toString.equals(language.toString)) {
+              translation.copy(message=transaltions.getOrElse(messageConstant.key,translation.message) )
+            }
+            else translation
+          })
+          if(!updatedTransaltions.exists(translation => translation.languageCode.toString.equals(language.toString) && !transaltions.getOrElse(messageConstant.key,"").isEmpty))
+            updatedTransaltions= updatedTransaltions :+ Translation.Translation(language.toString,transaltions.get(messageConstant.key).get)
+          messageConstant.copy(translations = updatedTransaltions)}))
+      }
     }).recover {
       case ex: Exception => {
         Logger.error(ex.getMessage)

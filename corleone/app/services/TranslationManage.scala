@@ -6,11 +6,7 @@ import play.api.mvc._
 import play.api.libs.json._
 import play.api.http._
 import play.api.http.HeaderNames._
-import models.MessageConstant
-import models.Link
-import models.Translation
-import models.Error
-import models.Response
+import models._
 
 import com.google.inject.ImplementedBy
 import scala.concurrent.Future
@@ -23,8 +19,9 @@ trait TranslationManage  {
   def deleteMessageConstant(key: String):Future[Option[ShortError]]
   def getIfExistWithKey(key: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
   def getIfExistWithTag(key: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
-
-  def getAllTags(): Future[Either[Seq[String], ShortError]]
+  def getTranslationMessages(keys:Seq[String],language:LanguageCodes.LanguageCode,transaltions:Map[String,String]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
+  def updateMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]]
+    def getAllTags(): Future[Either[Seq[String], ShortError]]
   def getAllLanguages(): Seq[String]
   
 }

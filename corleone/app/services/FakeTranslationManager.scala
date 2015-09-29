@@ -2,12 +2,8 @@ package services
 
 import models.Error.ShortError
 
-import models.MessageConstant
+import models._
 
-import models.Error
-import models.Response
-
-import models.{ Tables }
 import helpers.PostgresDriverExtended.api._
 import scala.concurrent.Future
 
@@ -47,5 +43,10 @@ class FakeTranslationManager() {
   def getAllLanguages(): Seq[String] = {
     return Seq[String]("de", "en", "it", "fr")
   }
-
-}
+  def getTranslationMessages(keys:Seq[String],language:LanguageCodes.LanguageCode,transaltions:Map[String,String]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]] = {
+    throw new NotImplementedError()
+  }
+  def updateMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]]= {
+    throw new NotImplementedError()
+  }
+  }

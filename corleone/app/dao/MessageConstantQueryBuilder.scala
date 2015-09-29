@@ -142,6 +142,33 @@ def buildSelectAllMessagesConstantsWithTagQuery(tag:String): Query[(Rep[String],
         .map(_.isActive)
         .update(false)
     } yield ())
+  /**
+   * Query to delete the message Constant.
+   * @param keys of message contsnta to delete.
+   * @return An sql delete of a row
+   */
+  def buildDeleteMessagesConstantAction(keys: Seq[String]): dbio.DBIOAction[Unit, NoStream, Read with Write with Write with Write] =
+    (for {
+      translationkey <- Tables.translationKey.filter(translationKey =>
+        (translationKey.isActive && (translationKey.name inSet keys)
+          ))
+        .result
+        .headOption
+      _ <- Tables.translationMessage.filter(translationMessage =>
+        (translationMessage.translationKeyId === translationkey.get.id.get &&
+          translationMessage.isActive))
+        .map(_.isActive)
+        .update(false)
+      _ <- Tables.translationTagging.filter(translationTagging =>
+        (translationTagging.translationKeyId === translationkey.get.id.get &&
+          translationTagging.isActive))
+        .map(_.isActive)
+        .update(false)
+      _ <- Tables.translationKey.filter(translationKey =>
+        (translationKey.isActive && (translationKey.name inSet keys)))
+        .map(_.isActive)
+        .update(false)
+    } yield ())
 
   /**
    * Slick action to create multiple message constants in one transaction.
@@ -182,6 +209,45 @@ def buildCreateMessageContants(messageConstants: Seq[MessageConstant.MessageCons
   } yield {
     })
 }
+  /**
+   * Slick action to create multiple message constants in one transaction.
+   * @param messageConstants To be created
+   * @return Action to create message constants
+   */
+  def buildUpdateMessageContants(messageConstants: Seq[MessageConstant.MessageConstant]):dbio.DBIOAction[Unit, NoStream, Write with Write with Read with Write with Read with Write with Write]={
+    val translationKeys: Seq[TranslationKey] = messageConstants.map(messageConstant => TranslationKey(None, messageConstant.key, true, Timestamp.valueOf(LocalDateTime.now())))
+    (for {
+      msgKey <- (Tables.translationKey returning Tables.translationKey.map(_.id) into ((translationKey, id) => (translationKey.name, id))) ++= translationKeys
+      msgkeyMap = msgKey.toMap
+      translation <- Tables.translationMessage ++= (messageConstants.flatMap(messageConstant =>
+        messageConstant.translations map { translation =>
+          TranslationMessage(None,
+            LanguageCodes.withName(translation.languageCode),
+            msgkeyMap.get(messageConstant.key).get,
+            translation.message,
+            true,
+            Timestamp.valueOf(LocalDateTime.now()),
+            Timestamp.valueOf(LocalDateTime.now()))
+        }))
+      tagsExist <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
+      tagsCreated <- Tables.tag ++= (messageConstants.flatMap(messageConstant => messageConstant.tags).filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
+        TagHolder(None, tag, Timestamp.valueOf(LocalDateTime.now()))
+      })
+      tags <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
+      tagMap = tags.map(tag => tag.name -> tag.id.get).toMap
+      _ <- Tables.translationTagging ++= messageConstants.flatMap(messageConstant => messageConstant.tags.map { tag =>
+        TranslationTagging(None,
+          tagMap.get(tag).get,
+          msgkeyMap.get(messageConstant.key).get,
+          true,
+          Timestamp.valueOf(LocalDateTime.now()),
+          Timestamp.valueOf(LocalDateTime.now()))
+      })
+      _<- Tables.version  ++= msgKey.map(el => Version(None, el._1, el._2, Operations.MODIFIED, Timestamp.valueOf(LocalDateTime.now()), Timestamp.valueOf(LocalDateTime.now())))
+
+    } yield {
+      })
+  }
   /**
    * Build an insert query for versioning the creation, the update or the delete  of message constant.
    * @param key of the created Message constant.

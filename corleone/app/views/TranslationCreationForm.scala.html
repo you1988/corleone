@@ -3,7 +3,7 @@
 <div class="col-md-6 padding-zero">
 	<div>
 
-	<form action="create-translation" data-toggle="validator"  onsubmit="return validateCreationForm()" id="profileForm" method="POST">
+	<form action="create-translation" data-toggle="validator"   id="createForm" method="POST">
 
 		<div class="row creation-component-zero">
 			<div class="col-md-2 creation-label-zero">
@@ -15,7 +15,7 @@
 			</div>
 		</div>
 
-		<div class="row creation-component-zero">
+		<div class="row creation-component-zero"		>
 			<div id ="div_select_0" class="col-md-2 creation-language-zero">
 				<select id="select_0" class="select_language">
 					<option value=""></option> @languages.map{ language =>

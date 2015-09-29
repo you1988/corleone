@@ -41,13 +41,28 @@
 				</div>
 			</form>
 			<div class="navbar-right col-md-3 create-div-top">
-						<form role="search"  action="create-form-translation" method="POST">
+				<form role="search"  action="create-form-translation" method="POST">
 			
-				<div class="input-group create-div">
+				     <div class="input-group create-div">
 						<button id="translation_create_button" type="submit"
 							class="btn btn-default create-button"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button>
-				</div>
+				      </div>
 				</form>
+				<form role="search"  action="export-form-translation" method="POST">
+
+					<div class="input-group create-div">
+						<button id="translation_export_button" type="submit"
+											class="btn btn-default create-button"><span class="glyphicon glyphicon-export" aria-hidden="true"></span></button>
+					</div>
+				</form>
+				<form role="search"  action="import-form-translation" method="POST">
+
+					<div class="input-group create-div">
+						<button id="translation_import_button" type="submit"
+								class="btn btn-default create-button"><span class="glyphicon glyphicon-import" aria-hidden="true"></span></button>
+					</div>
+				</form>
+
 			</div>
 		</div>
 	</nav>

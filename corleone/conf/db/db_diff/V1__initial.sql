@@ -8,7 +8,7 @@ CREATE TABLE ts_data.translation_key (
 CREATE UNIQUE INDEX ON ts_data.translation_key (tk_name, tk_is_active)
   WHERE tk_is_active;
 
-CREATE TYPE ts_data.language_code as ENUM('en-GB','en-US','de-DE');
+CREATE TYPE ts_data.language_code as ENUM('en','de','it','fr','pl','tr','es');
 
 CREATE TABLE ts_data.translation_message (
   "tm_id" BIGSERIAL NOT NULL PRIMARY KEY,

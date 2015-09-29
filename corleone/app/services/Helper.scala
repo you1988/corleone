@@ -1,9 +1,13 @@
 package services
 
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 import models._
-import play.Logger
-
+import play.api.Logger
+import play.api.libs.Files.TemporaryFile
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.Result
 import scala.util.matching.Regex
 
 /**
@@ -47,6 +51,26 @@ object Helper {
       }
     }
   }
+
+
+  def validatExportRequest(params: Map[String, Seq[String]]):Either[Requests.ExportRequest,Seq[String]] = {
+    var seq = Seq[String]()
+    val tag = params.get("tag");
+    tag match {
+      case None => seq = seq :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("tag")
+      case Some(keyValue) =>      if (!tag.get(0).matches( """[a-z_A-Z0-9]*""")) {
+        seq = seq :+Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_FIELD_FORMAT_UNSUPORTED_ERROR_MESSAGE.stripMargin.format("tag")
+      }
+    }
+
+
+    if (seq.length == 0) {
+
+
+      Left(Requests.ExportRequest(tag.get(0),";"))
+    } else Right(seq)
+  }
+
 
   def validatCreateRequest(params: Map[String, Seq[String]]):Either[MessageConstant.MessageConstant,Seq[String]] = {
     Logger.error("test " + params.toString())
@@ -134,6 +158,93 @@ object Helper {
     else message.stripMargin.format(allMatches.next().group(1))
 
   }
+
+  def getAndValidatImportRequest(file:Option[FilePart[TemporaryFile]],languageParam:Option[Seq[String]]): Either[Requests.ImportRequest, Seq[String]] = {
+    var errors: Seq[String] = Seq()
+    languageParam match {
+      case None => {
+        errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("language")
+        Right(errors)
+      }
+      case Some(langs) => {
+
+        if(langs.isEmpty) {
+          errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("language")
+          Right(errors)
+
+        }else {
+          val lang:String=langs(0)
+          if (!LanguageCodes.values.seq.map(languageCode => languageCode.toString).contains(lang)) {
+            errors = errors :+ Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_UNSUPORTED_LANGUAGE_CODE_ERROR_MESSAGE
+            Right(errors)
+          } else {
+            val language: LanguageCodes.LanguageCode = LanguageCodes.withName(lang)
+            file match {
+              case None => {
+                errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("file")
+                Right(errors)
+              }
+              case Some(file) => {
+                if (file.filename.endsWith("csv")) {
+                  if (!scala.io.Source.fromFile(file.ref.file).getLines.isEmpty) {
+                    val header: Seq[String] = scala.io.Source.fromFile(file.ref.file).getLines.toSeq(0).split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
+                    if (header.contains("key") && header.contains(lang)) {
+                      val indexLanguage = header.indexWhere(p => p.equals(lang))
+                      val indexKey = header.indexWhere(p => p.equals("key"))
+                      var data: Seq[Seq[String]] = scala.io.Source.fromFile(file.ref.file).getLines.map(line => {
+                        line.split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
+                      }
+                      ).toSeq
+                      if (!data.exists(p =>{
+                        Logger.error("line " + p.toString())
+                        p.length < indexLanguage || p.length < indexKey
+
+                      })) {
+                        val translations: Map[String, String] = data.map(line => {
+                          (line(indexKey).replaceAll("\"", ""), line(indexLanguage).replaceAll("\"", ""))}).toMap
+                        Left(Requests.ImportRequest(language, translations.filter(p => !(p._1.equals("key")&&p._2.equals(lang)))))
+                      } else {
+                        errors = errors :+ Constants.REQUEST_CSV_FILE_CONTENT_IS_NOT_VALID
+                        Right(errors)
+                      }
+                    } else {
+                      errors = errors :+ Constants.REQUEST_CSV_FILE_CONTENT_IS_NOT_CORRECT.stripMargin.format(lang)
+                      Right(errors)
+                    }
+                  } else {
+                    errors = errors :+ Constants.REQUEST_FILE_CONTENT_IS_EMPTY
+                    Right(errors)
+                  }
+                } else {
+                  errors = errors :+ Constants.REQUEST_FILE_TYPE_IS_NOT_SUPPORTED.stripMargin.format("file")
+                  Right(errors)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+  def toCsv(messages: Seq[MessageConstant.MessageConstant], request: Requests.ExportRequest): (String,String) = {
+    val rowDelim: String = "\r\n"
+    var header: String = "key,tags"
+    LanguageCodes.values.toSeq.foreach(l=>header=header +"," + l.toString )
+
+    var data: String = header
+    messages.foreach(message => {
+      var line: String = rowDelim + message.key + ","
+      message.tags.foreach(tag => line += tag + " ");
+      LanguageCodes.values.toSeq.foreach(l=>line=line +"," +  message.translations.find(trans => trans.languageCode.equals(l.toString)).getOrElse(Translation.Translation(l.toString, "")).message )
+      data += line
+    })
+    val fileName: String = request.tag + "_" + new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss").format(Calendar.getInstance().getTime()) + ".csv"
+    val contentDisposition: String = "attachment; filename=" + fileName
+    (data,contentDisposition)
+  }
+
 
 
 }

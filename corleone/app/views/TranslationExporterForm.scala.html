@@ -1,0 +1,45 @@
+@(tags: Seq[String] )
+<div class="col-md-3 aside"></div>
+<div class="col-md-6 padding-zero">
+	<div>
+
+	<form action="export-translation" data-toggle="validator"  id="exportForm" method="POST">
+
+		<div class="row creation-component-zero">
+			<div class="col-md-2 creation-label-zero">
+				<label class="control-label creation-control-label">tag:</label>
+			</div>
+			<div class="col-md-10 creation-input-div-zero">
+					<select id="select_0" class="select_tag">
+						<option value=""></option> @tags.map{ tag =>
+						<option value="@tag">@tag</option> }
+					</select>
+
+				<input
+						id="tag_value_0"  type="hidden" name="tag" value=""
+						> </input>
+			</div>
+		</div>
+
+
+
+
+		<div class="row create-div-top">
+			<div class="col-md-12">
+				<button id="translation_reset_button"  type="reset"
+					class="btn btn-default create-button">
+					<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+				</button>
+				<button id="translation_export_button" type="submit"
+					class="btn btn-default create-button" >
+					<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+				</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+</div>
+
+<div class="col-md-3 aside"></div>

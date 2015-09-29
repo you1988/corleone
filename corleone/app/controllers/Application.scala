@@ -15,10 +15,12 @@
  */
 package controllers
 
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import javax.inject.{Singleton, _}
 
 import models.Error.ShortError
-import models.{NotHandledError, MessageConstantViolatedConstraintError, NotFoundError, LanguageCodes}
+import models._
 import play.api._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
@@ -46,7 +48,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
   def search = Action.async {
     req =>
       val map: Map[String, Seq[String]] = req.body.asFormUrlEncoded.getOrElse(Map())
-     translationManager.getAllTags().flatMap { tags =>
+      translationManager.getAllTags().flatMap { tags =>
         tags match {
           case Left(tags) =>
             Helper.getAndValidatSearchRequest(map) match {
@@ -54,7 +56,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
                 translationManager.getIfExistWithTag(tag).map { message =>
                   message match {
                     case Left(messages) => Ok(views.html.main(tags)(views.html.translationSearchView(messages))(null))
-                    case Right(err) => handleFailure(Right(err),tags)
+                    case Right(err) => handleFailure(Right(err), tags)
                   }
                 }
               }
@@ -62,7 +64,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
                 translationManager.getIfExistWithKey(key).map { message =>
                   message match {
                     case Left(messages) => Ok(views.html.main(tags)(views.html.translationSearchView(messages))(null))
-                    case Right(err) => handleFailure(Right(err),tags)
+                    case Right(err) => handleFailure(Right(err), tags)
                   }
                 }
               }
@@ -81,8 +83,26 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
   def createForm = Action.async {
     translationManager.getAllTags().map { tags =>
       tags match {
-        case Right(err) =>Ok(views.html.main(Seq())(views.html.TranslationCreationForm(translationManager.getAllLanguages()))(null))
+        case Right(err) => Ok(views.html.main(Seq())(views.html.TranslationCreationForm(translationManager.getAllLanguages()))(null))
         case Left(tags) => Ok(views.html.main(tags)(views.html.TranslationCreationForm(translationManager.getAllLanguages()))(null));
+      }
+    }
+  }
+
+  def exportForm = Action.async {
+    translationManager.getAllTags().map { tags =>
+      tags match {
+        case Right(err) => Ok(views.html.main(Seq())(views.html.TranslationExporterForm(Seq()))(null))
+        case Left(tags) => Ok(views.html.main(tags)(views.html.TranslationExporterForm(tags))(null));
+      }
+    }
+  }
+
+  def importForm = Action.async {
+    translationManager.getAllTags().map { tags =>
+      tags match {
+        case Right(err) => Ok(views.html.main(Seq())(views.html.TranslationImporterForm(translationManager.getAllLanguages()))(null))
+        case Left(tags) => Ok(views.html.main(tags)(views.html.TranslationImporterForm(translationManager.getAllLanguages()))(null));
       }
     }
   }
@@ -95,7 +115,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
           case Right(err) => Ok(views.html.main(Seq())(null)(null));
           case Left(tags) => Helper.validatCreateRequest(map) match {
             case Left(message) => Ok(views.html.main(tags)(views.html.UpdateTranslationForm(message, translationManager.getAllLanguages()))(null))
-            case Right(errors) =>handleFailure(Left(errors),tags)
+            case Right(errors) => handleFailure(Left(errors), tags)
           }
         }
       }
@@ -115,45 +135,61 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
               case Left(message) => translationManager.updateMessageConstant(message).map { result =>
                 result match {
                   case Left(message) => Ok(views.html.main(tags)(null)(views.html.Succes("Message Updated")));
-                  case Right(error) => handleFailure(Right(error),tags)
+                  case Right(error) => handleFailure(Right(error), tags)
 
                 }
 
               }
               case Right(errors) => Future {
-                handleFailure(Left(errors),tags)
+                handleFailure(Left(errors), tags)
               }
             }
         }
       }
   }
 
-/*
-  translationManager.deleteMessageConstant(message.key).flatMap{ errors=> errors match{
-    case None => Ok(views.html.main(tags)(null)(views.html.Succes("Message Updated")));
-    case Some(error) => handleFailure(Right(error),tags)
-  }
-  }
-  */
+  /*
+    translationManager.deleteMessageConstant(message.key).flatMap{ errors=> errors match{
+      case None => Ok(views.html.main(tags)(null)(views.html.Succes("Message Updated")));
+      case Some(error) => handleFailure(Right(error),tags)
+    }
+    }
+    */
   def deleteTranslation = Action.async {
     req =>
       val map: Map[String, Seq[String]] = req.body.asFormUrlEncoded.getOrElse(Map())
       translationManager.getAllTags().flatMap { tags =>
         tags match {
-          case Right(err) => Future{Ok(views.html.main(Seq())(null)(null))}
+          case Right(err) => Future {
+            Ok(views.html.main(Seq())(null)(null))
+          }
           case Left(tags) => Helper.validatCreateRequest(map) match {
-            case Left(message) =>translationManager.deleteMessageConstant(message.key).map { errors =>
-              errors match{
-              case None => Ok(views.html.main(tags)(null)(views.html.Succes("Message Deleted")))
-              case Some(error) => handleFailure(Right(error),tags)
+            case Left(message) => translationManager.deleteMessageConstant(message.key).map { errors =>
+              errors match {
+                case None => Ok(views.html.main(tags)(null)(views.html.Succes("Message Deleted")))
+                case Some(error) => handleFailure(Right(error), tags)
+              }
             }
+            case Right(errors) => Future {
+              handleFailure(Left(errors), tags)
             }
-            case Right(errors) =>Future{handleFailure(Left(errors),tags)}
           }
         }
       }
   }
 
+  def handleFailure(error: Either[Seq[String], ShortError], tags: Seq[String]): Result = {
+    error match {
+      case Right(shortError) => shortError match {
+        case err: MessageConstantViolatedConstraintError => Ok(views.html.main(tags)(null)(views.html.Error(Seq[String]("There is already a message with the specific key"))))
+        case err: NotFoundError => Ok(views.html.main(tags)(null)(null))
+        case err: NotHandledError => Ok(views.html.main(tags)(null)(views.html.Error(Seq[String]("I do not know what happens. Could you please report the error?"))))
+        case _ => Ok(views.html.main(tags)(null)(views.html.Error(Seq[String]("The data source system is down wait a moment and try again.\n Could you please report the error in case it happens frequently? "))))
+
+      }
+      case Left(errors) => Ok(views.html.main(tags)(null)(views.html.Error(errors)))
+    }
+  }
 
   def createTranslation = Action.async { req =>
     val map: Map[String, Seq[String]] = req.body.asFormUrlEncoded.getOrElse(Map())
@@ -163,42 +199,108 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
           Ok(views.html.main(Seq())(null)(null));
         }
         case Left(tags) =>
-          Logger.error("Validate")
           Helper.validatCreateRequest(map) match {
-
             case Left(message) => {
-              Logger.error("Im before")
               translationManager.createMessageConstant(message).map {
                 messages => {
-
                   messages match {
-
                     case Left(message) => Ok(views.html.main(tags)(null)(views.html.Succes("Message Created")));
-                    case Right(error) => handleFailure(Right(error),tags)
+                    case Right(error) => handleFailure(Right(error), tags)
+                  }
+                }
+              }
+            }
+            case Right(errors) => Future {
+              handleFailure(Left(errors), tags)
+            }
+          }
+      }
+    }
+  }
+
+  def exportTranslation = Action.async { req =>
+    val map: Map[String, Seq[String]] = req.body.asFormUrlEncoded.getOrElse(Map())
+    translationManager.getAllTags().flatMap { tags =>
+      tags match {
+        case Right(err) => Future {
+          Ok(views.html.main(Seq())(null)(null));
+        }
+        case Left(tags) =>
+          Helper.validatExportRequest(map) match {
+            case Left(request) => {
+              translationManager.getIfExistWithTag(request.tag).map {
+                messages => {
+                  messages match {
+                    case Left(message) => {
+                      val data = Helper.toCsv(message, request)
+                      Ok(data._1).withHeaders(CONTENT_TYPE -> "text/csv", "Content-Disposition" -> data._2);
+                    }
+                    case Right(error) => handleFailure(Right(error), tags)
                   }
 
                 }
               }
             }
             case Right(errors) => Future {
-              handleFailure(Left(errors),tags)
+              handleFailure(Left(errors), tags)
             }
           }
       }
     }
   }
-def handleFailure(error:Either[Seq[String],ShortError],tags:Seq[String]):Result={
-error match {
-  case Right(shortError) => shortError match {
-    case err : MessageConstantViolatedConstraintError => Ok(views.html.main(tags)(null)(views.html.Error(Seq[String]("There is already a message with the specific key"))))
-    case err: NotFoundError =>Ok(views.html.main(tags)(null)(null))
-    case err : NotHandledError =>Ok(views.html.main(tags)(null)(views.html.Error(Seq[String]("I do not know what happens. Could you please report the error?"))))
-    case _ =>Ok(views.html.main(tags)(null)(views.html.Error(Seq[String]("The data source system is down wait a moment and try again.\n Could you please report the error in case it happens frequently? "))))
+
+  def toCsv(messages: Seq[MessageConstant.MessageConstant], request: Requests.ExportRequest): Result = {
+    val rowDelim: String = "\r\n"
+    val header: String = "key,tags,en-GB,en-US,de-DE"
+
+    var data: String = header
+    messages.foreach(message => {
+      var line: String = rowDelim + message.key + ","
+      message.tags.foreach(tag => line += tag + " ");
+      line += ","
+      line += message.translations.find(trans => trans.languageCode.equals("en-GB")).getOrElse(Translation.Translation("en-GB", "")).message + ","
+      line += message.translations.find(trans => trans.languageCode.equals("en-US")).getOrElse(Translation.Translation("en-US", "")).message + ","
+      line += message.translations.find(trans => trans.languageCode.equals("de-DE")).getOrElse(Translation.Translation("de-DE", "")).message
+      data += line
+    })
+    val fileName: String = request.tag + "_" + new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss").format(Calendar.getInstance().getTime()) + ".csv"
+    val contentDisposition: String = "attachment; filename=" + fileName
+    Ok(data).withHeaders(CONTENT_TYPE -> "text/csv", "Content-Disposition" -> contentDisposition);
 
   }
-  case Left(errors) =>  Ok(views.html.main(tags)(null)(views.html.Error(errors)))
-}
-}
+
+  def importTranslation = Action.async(parse.multipartFormData) { req =>
+
+    Helper.getAndValidatImportRequest(req.body.file("csv"), req.body.asFormUrlEncoded.get("language")) match {
+      case Right(errors) => Future {
+        handleFailure(Left(errors), Seq())
+      }
+      case Left(request) => {
+        translationManager.getTranslationMessages(request.translations.map(l => l._1).toSeq, request.language, request.translations).flatMap {
+          messages => {
+            messages match {
+              case Right(errors) => {
+                Future {
+                  handleFailure(Right(errors), Seq())
+                }
+              }
+              case Left(message) => {
+                translationManager.updateMessageConstants(message).map {
+                  error => error match {
+                    case None => Ok(views.html.main(Seq())(null)((views.html.Succes("CSV file is imported."))));
+                    case Some(err) => {
+                      handleFailure(Right(err), Seq())
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
 }
 
 
