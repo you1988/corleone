@@ -23,6 +23,7 @@ import models.Error.ShortError
 import models._
 import play.api._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.libs.iteratee.Enumerator
 import play.api.mvc._
 import services.{Helper, TranslationManage}
 
@@ -233,7 +234,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
                   messages match {
                     case Left(message) => {
                       val data = Helper.toCsv(message, request)
-                      Ok(data._1).withHeaders(CONTENT_TYPE -> "text/csv", "Content-Disposition" -> data._2);
+                      Ok.chunked(Enumerator(data._1.getBytes("ISO-8859-1")).andThen(Enumerator.eof)).withHeaders(CONTENT_TYPE -> "text/csv; charset=ISO-8859-1", "Content-Disposition" -> data._2);
                     }
                     case Right(error) => handleFailure(Right(error), tags)
                   }

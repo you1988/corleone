@@ -1,8 +1,10 @@
 package services
 
+import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+import com.google.common.base.Charsets
 import models._
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
@@ -186,12 +188,12 @@ object Helper {
               }
               case Some(file) => {
                 if (file.filename.endsWith("csv")) {
-                  if (!scala.io.Source.fromFile(file.ref.file).getLines.isEmpty) {
-                    val header: Seq[String] = scala.io.Source.fromFile(file.ref.file).getLines.toSeq(0).split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
+                  if (!scala.io.Source.fromFile(file.ref.file,"ISO-8859-1").getLines.isEmpty) {
+                    val header: Seq[String] = scala.io.Source.fromFile(file.ref.file,"ISO-8859-1").getLines.toSeq(0).split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
                     if (header.contains("key") && header.contains(lang)) {
                       val indexLanguage = header.indexWhere(p => p.equals(lang))
                       val indexKey = header.indexWhere(p => p.equals("key"))
-                      var data: Seq[Seq[String]] = scala.io.Source.fromFile(file.ref.file).getLines.map(line => {
+                      var data: Seq[Seq[String]] = scala.io.Source.fromFile(file.ref.file,"ISO-8859-1").getLines.map(line => {
                         line.split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
                       }
                       ).toSeq
@@ -242,7 +244,7 @@ object Helper {
     })
     val fileName: String = request.tag + "_" + new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss").format(Calendar.getInstance().getTime()) + ".csv"
     val contentDisposition: String = "attachment; filename=" + fileName
-    (data,contentDisposition)
+    (new String(Charset.forName("ISO-8859-1").encode(data).array(),Charset.forName("ISO-8859-1")),contentDisposition)
   }
 
 
