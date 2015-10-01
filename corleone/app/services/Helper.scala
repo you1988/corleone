@@ -64,12 +64,19 @@ object Helper {
         seq = seq :+Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_FIELD_FORMAT_UNSUPORTED_ERROR_MESSAGE.stripMargin.format("tag")
       }
     }
+    val csvType = params.get("csv_type");
+    Logger.error(csvType.get.toString())
+    var csvTypeValue:String=""
+    csvType match {
+      case None => seq = seq :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("csv type")
+      case Some(keyValue) =>csvTypeValue=csvType.get(0)
+    }
 
 
     if (seq.length == 0) {
 
 
-      Left(Requests.ExportRequest(tag.get(0),";"))
+      Left(Requests.ExportRequest(tag.get(0),";",csvTypeValue))
     } else Right(seq)
   }
 
@@ -161,8 +168,18 @@ object Helper {
 
   }
 
-  def getAndValidatImportRequest(file:Option[FilePart[TemporaryFile]],languageParam:Option[Seq[String]]): Either[Requests.ImportRequest, Seq[String]] = {
+  def getAndValidatImportRequest(file:Option[FilePart[TemporaryFile]],languageParam:Option[Seq[String]],csvType:Option[Seq[String]]): Either[Requests.ImportRequest, Seq[String]] = {
     var errors: Seq[String] = Seq()
+    var csvTypeValue:String=""
+    csvType match {
+      case None => {
+        errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("csv type")
+      return Right(errors)
+      }
+      case Some(keyValue) =>csvTypeValue=csvType.get(0)
+    }
+
+
     languageParam match {
       case None => {
         errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("language")
@@ -188,12 +205,12 @@ object Helper {
               }
               case Some(file) => {
                 if (file.filename.endsWith("csv")) {
-                  if (!scala.io.Source.fromFile(file.ref.file,"ISO-8859-1").getLines.isEmpty) {
-                    val header: Seq[String] = scala.io.Source.fromFile(file.ref.file,"ISO-8859-1").getLines.toSeq(0).split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
+                  if (!scala.io.Source.fromFile(file.ref.file,csvTypeValue).getLines.isEmpty) {
+                    val header: Seq[String] = scala.io.Source.fromFile(file.ref.file,csvTypeValue).getLines.toSeq(0).split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
                     if (header.contains("key") && header.contains(lang)) {
                       val indexLanguage = header.indexWhere(p => p.equals(lang))
                       val indexKey = header.indexWhere(p => p.equals("key"))
-                      var data: Seq[Seq[String]] = scala.io.Source.fromFile(file.ref.file,"ISO-8859-1").getLines.map(line => {
+                      var data: Seq[Seq[String]] = scala.io.Source.fromFile(file.ref.file,csvTypeValue).getLines.map(line => {
                         line.split(Constants.REGEX_SPLIT_CSV_FILE).toSeq
                       }
                       ).toSeq
@@ -242,9 +259,10 @@ object Helper {
       LanguageCodes.values.toSeq.foreach(l=>line=line +"," +  message.translations.find(trans => trans.languageCode.equals(l.toString)).getOrElse(Translation.Translation(l.toString, "")).message )
       data += line
     })
+    Logger.error("tetststtsts " + request.csvEncoding)
     val fileName: String = request.tag + "_" + new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss").format(Calendar.getInstance().getTime()) + ".csv"
     val contentDisposition: String = "attachment; filename=" + fileName
-    (new String(Charset.forName("ISO-8859-1").encode(data).array(),Charset.forName("ISO-8859-1")),contentDisposition)
+    (new String(Charset.forName(request.csvEncoding).encode(data).array(),Charset.forName(request.csvEncoding)),contentDisposition)
   }
 
 
