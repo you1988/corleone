@@ -33,3 +33,5 @@ POST    /export-form-translation     @controllers.Application.exportForm()
 POST    /export-translation          @controllers.Application.exportTranslation()
 POST    /import-form-translation     @controllers.Application.importForm()
 POST    /import-translation          @controllers.Application.importTranslation()
+POST    /create-translation-props    @controllers.Application.createTranslationsBasedOnProps()
+

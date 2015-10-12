@@ -93,7 +93,56 @@ $('#tags-span-container')
 						$('#tag-input').val('');
 						return false;
 					}
-				});
+});
+
+
+                $('#tags-span-props-container').on("click", function search() {
+                	$('#tag-props-input').focus();
+                	return true;
+                });
+                $('#tag-input').focus(function(event) {
+                	$('#tags-span-props-container').addClass("focus-controoll-tags");
+                });
+                $('#tag-input').blur(function(event) {
+                	$('#tags-span-props-container').removeClass("focus-controoll-tags");
+                });
+                $('#tags-span-props-container')
+                		.keydown(
+                				function(e) {
+                				//case delete clicked
+                					if (e.keyCode == 8) {
+
+                						var test = $('#tag-props-input').val();
+                						if (!test) {
+                							$('#tags-props-collector .tag-span:last-child').remove();
+                						}
+
+                					}
+                					//case space clicked
+                					if (e.keyCode == 32) {
+                						var str = $('#tag-props-input').val().trim();
+                						var id = ID()
+                						var result = "<span id=\"parent_"+id+"\" class='tag-span'>&nbsp;<span  contenteditable=\"false\""
+                								+ "class=\"label label-success\""
+                								+ ">"
+                								+ "<input readonly=\"readonly\" class=\"input-transparent\" type=\"hidden\" name='tags-props' value=\""
+                								+ str
+                								+ "\">"
+                								+ str
+                								+ "&nbsp;"
+                								+ "<span id=\""
+                								+ id
+                								+ "\" contenteditable=\"false\" class=\"hover-remove glyphicon glyphicon-remove\" onclick=\"delet(this.id)\"> </span> "
+                								+ "</span></span>";
+                						var el = $('#tags-props-collector');
+                						var elementType = el.prop('tagName');
+                						el.append(result);
+                						$('#tag-props-input').val('');
+                						return false;
+                					}
+                				});
+
+
 var ID = function() {
 	return '_' + Math.random().toString(36).substr(2, 9);
 };

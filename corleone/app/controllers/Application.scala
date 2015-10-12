@@ -301,6 +301,26 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
       }
     }
   }
+  def createTranslationsBasedOnProps = Action.async(parse.multipartFormData) { req =>
+    Logger.error("tes ghsagdjhdjghasdjkhashd")
+    Helper.getAndValidateCreateBasedOnPropsRequest(req.body.file("props"), req.body.asFormUrlEncoded.get("language"), req.body.asFormUrlEncoded.get("tags-props")) match {
+      case Right(errors) => Future {
+        handleFailure(Left(errors), Seq())
+      }
+      case Left(translation) => {
+        translationManager.createMessageConstants(translation).map {
+          errors => {
+          errors match{
+            case None => Ok(views.html.main(Seq())(null)((views.html.Succes("props file is imported."))))
+            case Some(errors)=> handleFailure(Right(errors), Seq())
+          }
+
+          }
+        }
+      }
+    }
+  }
+
 
 }
 

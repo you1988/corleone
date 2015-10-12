@@ -1,8 +1,9 @@
 package services
 
+import java.io.FileInputStream
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
-import java.util.Calendar
+import java.util.{Properties, Calendar}
 
 import com.google.common.base.Charsets
 import models._
@@ -167,6 +168,83 @@ object Helper {
     else message.stripMargin.format(allMatches.next().group(1))
 
   }
+
+
+  def getAndValidateCreateBasedOnPropsRequest(file:Option[FilePart[TemporaryFile]],languageParam:Option[Seq[String]],tag:Option[Seq[String]]): Either[Seq[MessageConstant.MessageConstant], Seq[String]] = {
+    var errors: Seq[String] = Seq()
+    var translations: Seq[MessageConstant.MessageConstant] = Seq()
+    var tags: Seq[String] = Seq()
+    var csvTypeValue:String=""
+    Logger.error("tes " + languageParam + " tag " + tag)
+    val prop = new Properties()
+    tag match {
+      case None => {
+        errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("csv type")
+        return Right(errors)
+      }
+      case Some(tagsValue) =>tags=tagsValue
+    }
+
+
+    languageParam match {
+      case None => {
+        errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("language")
+        Right(errors)
+      }
+      case Some(langs) => {
+
+        if(langs.isEmpty) {
+          errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("language")
+          Right(errors)
+
+        }else {
+          val lang:String=langs(0)
+          if (!LanguageCodes.values.seq.map(languageCode => languageCode.toString).contains(lang)) {
+            errors = errors :+ Constants.REQUEST_MESSAGE_CONSTANT_MAL_FORMED_UNSUPORTED_LANGUAGE_CODE_ERROR_MESSAGE
+            Right(errors)
+          } else {
+            val language: LanguageCodes.LanguageCode = LanguageCodes.withName(lang)
+            file match {
+              case None => {
+                errors = errors :+ Constants.REQUEST_FIELD_INVALID_IS_EMPTY_ERROR_MESSAGE.stripMargin.format("file")
+                Right(errors)
+              }
+              case Some(file) => {
+                if (file.filename.endsWith("properties")) {
+                    try {
+                      prop.load(new FileInputStream(file.ref.file))
+                      val map = prop.entrySet().iterator()
+                      while(map.hasNext){
+                      val next = map.next()
+
+                        translations= translations :+MessageConstant.MessageConstant(next.getKey.toString, "test", tags, Seq(Translation.Translation(language.toString,next.getValue.toString)))
+                      }
+
+
+
+                    } catch { case e: Exception => {
+                      errors = errors :+ e.getMessage
+                      Logger.error(e.getMessage)
+                    }
+                      return  Right(errors)
+                    }
+                  Logger.info("tes " + translations)
+                    Left(translations)
+
+                } else {
+                  errors = errors :+ Constants.REQUEST_FILE_TYPE_IS_NOT_SUPPORTED.stripMargin.format("file")
+                  Right(errors)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+
 
   def getAndValidatImportRequest(file:Option[FilePart[TemporaryFile]],languageParam:Option[Seq[String]],csvType:Option[Seq[String]]): Either[Requests.ImportRequest, Seq[String]] = {
     var errors: Seq[String] = Seq()
