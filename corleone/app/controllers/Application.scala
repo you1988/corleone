@@ -23,6 +23,7 @@ import models.Error.ShortError
 import models._
 import play.api._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.libs.iteratee.Enumerator
 import play.api.mvc._
 import services.{Helper, TranslationManage}
 
@@ -233,7 +234,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
                   messages match {
                     case Left(message) => {
                       val data = Helper.toCsv(message, request)
-                      Ok(data._1).withHeaders(CONTENT_TYPE -> "text/csv", "Content-Disposition" -> data._2);
+                      Ok.chunked(Enumerator(data._1.getBytes(request.csvEncoding)).andThen(Enumerator.eof)).withHeaders(CONTENT_TYPE -> "text/csv", "Content-Disposition" -> data._2);
                     }
                     case Right(error) => handleFailure(Right(error), tags)
                   }
@@ -271,7 +272,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
 
   def importTranslation = Action.async(parse.multipartFormData) { req =>
 
-    Helper.getAndValidatImportRequest(req.body.file("csv"), req.body.asFormUrlEncoded.get("language")) match {
+    Helper.getAndValidatImportRequest(req.body.file("csv"), req.body.asFormUrlEncoded.get("language"), req.body.asFormUrlEncoded.get("csv_type")) match {
       case Right(errors) => Future {
         handleFailure(Left(errors), Seq())
       }
