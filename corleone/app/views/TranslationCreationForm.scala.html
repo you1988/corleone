@@ -1,7 +1,98 @@
 @(languages: Seq[String] )
 <div class="col-md-3 aside"></div>
 <div class="col-md-6 padding-zero">
-	<div>
+
+
+	<div class="panel-group" id="accordion">
+		<div class="panel panel-success panel-corner-none">
+			<div class="panel-heading panel-corner-none">
+				<h4 class="panel-title">
+
+					<a data-toggle="collapse" data-parent="#accordion" href="#collapse1">Creation Based Properties</a>
+				</h4>
+			</div>
+			<div id="collapse1" class="panel-collapse collapse in ">
+
+		<form action="create-translation-props" data-toggle="validator"  enctype="multipart/form-data"  id="createFormComplex" method="POST">
+
+
+			<div class="row creation-component-zero">
+				<div class="col-md-2 creation-label-zero">
+					<label class="control-label creation-control-label">language :</label>
+				</div>
+				<div class="col-md-10 creation-input-div-zero">
+					<select id="select_1000" class="select_language">
+						<option value=""></option> @languages.map{ language =>
+						<option value="@language">@language</option> }
+					</select>
+					<input
+							id="language_value_1000"  type="hidden" name="language"
+							> </input>
+				</div>
+			</div>
+
+			<div class="row creation-component-zero">
+				<div class="col-md-2 creation-label-zero">
+					<label class="control-label creation-control-label">File :</label>
+				</div>
+				<div class="col-md-10 creation-input-div-zero">
+					<div class="col-md-11 creation-input-div-zero">
+						<input id="uploadFile" placeholder="Choose File"  class="form-control creation-input-zero" disabled="disabled" />
+					</div>
+					<div class="col-md-1 creation-input-div-zero fileUpload btn btn-default create-button">
+						<span  class="glyphicon glyphicon-open" aria-hidden="true"></span>
+						<input id="csv_file"  type="file" name="props" class="upload"> </input>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="row creation-component-zero ">
+				<div class="col-md-2 creation-label-zero">
+					<label class="control-label creation-control-label">Tags:</label>
+				</div>
+				<div class="col-md-10 creation-input-div-zero">
+					<div class="form-control creation-input-zero"
+						 id="tags-span-props-container">
+						<div id="tags-props-collector" class="inlin"></div>
+						<div class="inlin">
+							&nbsp <input id="tag-props-input" autocomplete="on"
+										 class="autocomplete tag-text" type="text" />
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="row create-div-top">
+				<div class="col-md-12">
+					<button id="translation_props_reset_button"  type="reset"
+							class="btn btn-default create-button">
+						<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+					</button>
+					<button id="translation_props_create_button" type="submit"
+							class="btn btn-default create-button" >
+						<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+					</button>
+				</div>
+			</div>
+		</form>
+	</div>
+		</div>
+
+
+
+
+
+
+
+		<div class="panel panel-success panel-corner-none">
+			<div class="panel-heading panel-corner-none">
+				<h4 class="panel-title">
+
+					<a data-toggle="collapse" data-parent="#accordion" href="#collapse2">Simple Creation</a>
+				</h4>
+			</div>
+			<div id="collapse2" class="panel-collapse collapse">
 
 	<form action="create-translation" data-toggle="validator"   id="createForm" method="POST">
 
@@ -73,7 +164,9 @@
 	</form>
 </div>
 
+		</div>
 
+</div>
 </div>
 
 <div class="col-md-3 aside"></div>

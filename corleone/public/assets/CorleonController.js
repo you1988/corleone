@@ -54,6 +54,35 @@ function validateCreationForm() {
 	}
 	return confirm('Do you want to confirm your action?');
 }
+function validateCreationComplexForm() {
+	var result = true;
+	var errors = "<div class=\"alert alert-danger\" role=\"alert\">"
+	if (!$("input[name='tags-props']") || $("input[name='tags-props']").length == 0) {
+		errors += buildError("You should specify at least one tag.")
+		result = false;
+	}
+	var t = $("input[name='language']");
+	if (!t.val()) {
+		errors += buildError("You should specify language.")
+		result = false;
+	}
+	var m = $("input[name='props']");
+	if (!m.val()) {
+		result = false;
+		errors += buildError("You should choose a properties file.")
+	}
+
+	var unique_values = {};
+
+	errors += "</div>"
+	if (!result) {
+		$("#notification").empty();
+		$("#notification").append(errors);
+		return false;
+	}
+	return confirm('Do you want to confirm your action?');
+}
+
 function validateImportForm() {
 	var result = true;
 	var errors = "<div class=\"alert alert-danger\" role=\"alert\">"
@@ -337,8 +366,8 @@ $("#importForm").on("submit", function(event){
 $("#exportForm").on("submit", function(event){
                               return  validateExportForm();
                            });
-$("#createForm").on("submit", function(event){
-                              return  validateCreationForm();
+$("#createFormComplex").on("submit", function(event){
+                              return  validateCreationComplexForm();
                            });
 $("#updateForm").on("submit", function(event){
                               return  validateCreationForm();
