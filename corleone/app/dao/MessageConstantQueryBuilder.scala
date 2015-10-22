@@ -190,8 +190,8 @@ def buildCreateMessageContants(messageConstants: Seq[MessageConstant.MessageCons
           Timestamp.valueOf(LocalDateTime.now()),
           Timestamp.valueOf(LocalDateTime.now()))
       }))
-    tagsExist <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
-    tagsCreated <- Tables.tag ++= (messageConstants.flatMap(messageConstant => messageConstant.tags).filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
+    tagsExist <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags).distinct).result
+    tagsCreated <- Tables.tag ++= (messageConstants.flatMap(messageConstant => messageConstant.tags).distinct.filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
       TagHolder(None, tag, Timestamp.valueOf(LocalDateTime.now()))
     })
     tags <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
@@ -229,8 +229,8 @@ def buildCreateMessageContants(messageConstants: Seq[MessageConstant.MessageCons
             Timestamp.valueOf(LocalDateTime.now()),
             Timestamp.valueOf(LocalDateTime.now()))
         }))
-      tagsExist <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
-      tagsCreated <- Tables.tag ++= (messageConstants.flatMap(messageConstant => messageConstant.tags).filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
+      tagsExist <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags).distinct).result
+      tagsCreated <- Tables.tag ++= (messageConstants.flatMap(messageConstant => messageConstant.tags).distinct.filter(tag => !tagsExist.exists(x => tag == x.name)) map { tag =>
         TagHolder(None, tag, Timestamp.valueOf(LocalDateTime.now()))
       })
       tags <- Tables.tag.filter(_.name inSet messageConstants.flatMap(messageConstant => messageConstant.tags)).result
