@@ -250,25 +250,6 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
     }
   }
 
-  def toCsv(messages: Seq[MessageConstant.MessageConstant], request: Requests.ExportRequest): Result = {
-    val rowDelim: String = "\r\n"
-    val header: String = "key,tags,en-GB,en-US,de-DE"
-
-    var data: String = header
-    messages.foreach(message => {
-      var line: String = rowDelim + message.key + ","
-      message.tags.foreach(tag => line += tag + " ");
-      line += ","
-      line += message.translations.find(trans => trans.languageCode.equals("en-GB")).getOrElse(Translation.Translation("en-GB", "")).message + ","
-      line += message.translations.find(trans => trans.languageCode.equals("en-US")).getOrElse(Translation.Translation("en-US", "")).message + ","
-      line += message.translations.find(trans => trans.languageCode.equals("de-DE")).getOrElse(Translation.Translation("de-DE", "")).message
-      data += line
-    })
-    val fileName: String = request.tag + "_" + new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss").format(Calendar.getInstance().getTime()) + ".csv"
-    val contentDisposition: String = "attachment; filename=" + fileName
-    Ok(data).withHeaders(CONTENT_TYPE -> "text/csv", "Content-Disposition" -> contentDisposition);
-
-  }
 
   def importTranslation = Action.async(parse.multipartFormData) { req =>
 

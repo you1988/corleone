@@ -301,6 +301,7 @@ object Helper {
                           (line(indexKey).replaceAll("\"", ""), line(indexLanguage).replaceAll("\"", ""))}).toMap
                         Left(Requests.ImportRequest(language, translations.filter(p => !(p._1.equals("key")&&p._2.equals(lang)))))
                       } else {
+                        Logger.error("Error The csv file contains at least one line with more columns " + data.find(p=>  p.length < indexLanguage || p.length < indexKey).toString)
                         errors = errors :+ Constants.REQUEST_CSV_FILE_CONTENT_IS_NOT_VALID
                         Right(errors)
                       }
