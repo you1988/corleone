@@ -21,7 +21,7 @@ import javax.inject._
 import dao.MessageConstantQueryBuilder
 import helpers.PostgresDriverExtended.api._
 import models.Error.ShortError
-import models.{MessageConstant, _}
+import models._
 import org.postgresql.util.PSQLException
 import play.api._
 
@@ -203,16 +203,41 @@ class TranslationManageImpl extends TranslationManage {
    *         TimeOutError if postgres data base return a time out exception.
    *         NotExpectedError if a problem happen in the database
    */
-  def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]] = {
+  def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Either[Seq[MessageConstant.MessageConstant],Error.ShortError]] = {
 
-    val transaction = MessageConstantQueryBuilder.buildCreateMessageContants(messageConstants)
-    val f: Future[Unit] = db.run(transaction.transactionally)
-    f.map {
-      ex => None
-    }.recover {
-      case ex: Exception => Some(mapExceptionError(ex))
+
+    val searchQuery = MessageConstantQueryBuilder.buildSelectAllMessagesConstantsWithKeysQuery(messageConstants.map(message => message.key))
+    val searchResult = searchQuery.result
+
+    val result: Future[Seq[(String, (LanguageCodes.LanguageCode, String), String, String)]] = db.run(searchResult)
+    handleSearchQueryResponse(result).flatMap { res => res match {
+      case Right(err)=> {
+        err match {
+          case err: NotFoundError => {
+
+            val transaction = MessageConstantQueryBuilder.buildCreateMessageContants(messageConstants)
+            val f: Future[Unit] = db.run(transaction.transactionally)
+            f.map {
+              ex => Left(Seq())
+            }.recover {
+              case ex: Exception => Right(mapExceptionError(ex))
+            }
+          }
+          case err: ShortError=> Future{Right(err)}
+
+        }
+      }
+      case Left(seq)=>{
+        val transaction = MessageConstantQueryBuilder.buildCreateMessageContants(messageConstants.filter(p => !seq.exists(a=> a.key.equals(p.key))))
+        val f: Future[Unit] = db.run(transaction.transactionally)
+        f.map {
+          ex => res
+        }.recover {
+          case ex: Exception => Right(mapExceptionError(ex))
+        }
+      }
     }
-
+    }
   }
 
 

@@ -101,6 +101,7 @@ object MessageConstantQueryBuilder {
    * @return Query to fetch all message constants with tag.
    */
 def buildSelectAllMessagesConstantsWithTagQuery(tag:String): Query[(Rep[String], (Rep[LanguageCodes.Value], Rep[String]), Rep[String], Rep[String]), (String, (LanguageCodes.Value, String), String,String), Seq] ={
+if(!tag.equals("ALL"))
   (for {
     (translationTaggings, tags) <- Tables.translationTagging join Tables.tag on (_.tagId === _.id) if tags.name === tag && translationTaggings.isActive
     translationkey <- Tables.translationKey if translationkey.id === translationTaggings.translationKeyId && translationkey.isActive
@@ -113,7 +114,21 @@ def buildSelectAllMessagesConstantsWithTagQuery(tag:String): Query[(Rep[String],
       (translationkey.name, (translationMessage.languageCode, translationMessage.value), tag.name, version.name)
 
     })
-}
+else
+    (for {
+      (translationTaggings, tags) <- Tables.translationTagging join Tables.tag on (_.tagId === _.id) if translationTaggings.isActive
+      translationkey <- Tables.translationKey if translationkey.id === translationTaggings.translationKeyId && translationkey.isActive
+      translationMessage <- Tables.translationMessage if translationkey.id === translationMessage.translationKeyId && translationMessage.isActive
+      translationTagging <- Tables.translationTagging if translationkey.id === translationTagging.translationKeyId && translationTagging.isActive
+      tag <- Tables.tag if tag.id === translationTagging.tagId
+      version <- Tables.version if version.translationKeyId === translationkey.id
+    } yield {
+
+        (translationkey.name, (translationMessage.languageCode, translationMessage.value), tag.name, version.name)
+
+      })
+
+  }
   /**
    * Query to delete the message Constant.
    * @param key of message contsnta to delete.
@@ -169,6 +184,26 @@ def buildSelectAllMessagesConstantsWithTagQuery(tag:String): Query[(Rep[String],
         .map(_.isActive)
         .update(false)
     } yield ())
+
+
+
+  def buildSelectAllMessagesConstantsWithKeysQuery(keys: Seq[String]): Query[(Rep[String], (Rep[LanguageCodes.Value], Rep[String]), Rep[String], Rep[String]), (String, (LanguageCodes.Value, String), String,String), Seq] ={
+      (for {
+        translationkey <- Tables.translationKey if  translationkey.isActive && (translationkey.name inSet keys)
+        translationMessage <- Tables.translationMessage if translationkey.id === translationMessage.translationKeyId && translationMessage.isActive
+        translationTagging <- Tables.translationTagging if translationkey.id === translationTagging.translationKeyId && translationTagging.isActive
+        tag <- Tables.tag if tag.id === translationTagging.tagId
+        version <- Tables.version if version.translationKeyId === translationkey.id
+      } yield {
+
+          (translationkey.name, (translationMessage.languageCode, translationMessage.value), tag.name, version.name)
+
+        })
+
+  }
+
+
+
 
   /**
    * Slick action to create multiple message constants in one transaction.

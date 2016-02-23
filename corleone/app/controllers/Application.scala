@@ -234,7 +234,7 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
                   messages match {
                     case Left(message) => {
                       val data = Helper.toCsv(message, request)
-                      Ok.chunked(Enumerator(data._1.getBytes(request.csvEncoding)).andThen(Enumerator.eof)).withHeaders(CONTENT_TYPE -> "text/csv", "Content-Disposition" -> data._2);
+                      Ok.chunked(Enumerator(data._1).andThen(Enumerator.eof)).withHeaders(CONTENT_TYPE -> s"text/csv ; charset=${request.csvEncoding}", "Content-Disposition" -> data._2);
                     }
                     case Right(error) => handleFailure(Right(error), tags)
                   }
@@ -283,7 +283,6 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
     }
   }
   def createTranslationsBasedOnProps = Action.async(parse.multipartFormData) { req =>
-    Logger.error("tes ghsagdjhdjghasdjkhashd")
     Helper.getAndValidateCreateBasedOnPropsRequest(req.body.file("props"), req.body.asFormUrlEncoded.get("language"), req.body.asFormUrlEncoded.get("tags-props")) match {
       case Right(errors) => Future {
         handleFailure(Left(errors), Seq())
@@ -292,8 +291,13 @@ class Application @Inject()(translationManager: TranslationManage) extends Contr
         translationManager.createMessageConstants(translation).map {
           errors => {
           errors match{
-            case None => Ok(views.html.main(Seq())(null)((views.html.Succes("props file is imported."))))
-            case Some(errors)=> handleFailure(Right(errors), Seq())
+            case Left(seq) =>
+              if(seq.isEmpty)
+                Ok(views.html.main(Seq())(null)((views.html.Succes("props file is imported."))))
+              else {
+                Ok(views.html.main(Seq())(null)((views.html.ErrorCreate("Those keys cannot be inserted, already exists: ",seq.map(m => m.key)))))
+              }
+            case Right(errors)=> handleFailure(Right(errors), Seq())
           }
 
           }

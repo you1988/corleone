@@ -11,6 +11,7 @@ import play.api.Logger
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.Result
+import scala.io.Source
 import scala.util.matching.Regex
 
 /**
@@ -210,18 +211,15 @@ object Helper {
                 Right(errors)
               }
               case Some(file) => {
+
                 if (file.filename.endsWith("properties")) {
                     try {
                       prop.load(new FileInputStream(file.ref.file))
                       val map = prop.entrySet().iterator()
                       while(map.hasNext){
                       val next = map.next()
-
                         translations= translations :+MessageConstant.MessageConstant(next.getKey.toString, "test", tags, Seq(Translation.Translation(language.toString,next.getValue.toString)))
                       }
-
-
-
                     } catch { case e: Exception => {
                       errors = errors :+ e.getMessage
                       Logger.error(e.getMessage)
@@ -326,7 +324,7 @@ object Helper {
   }
 
 
-  def toCsv(messages: Seq[MessageConstant.MessageConstant], request: Requests.ExportRequest): (String,String) = {
+  def toCsv(messages: Seq[MessageConstant.MessageConstant], request: Requests.ExportRequest): (Array[Byte],String) = {
     val rowDelim: String = "\r\n"
     var header: String = "key,tags"
     LanguageCodes.values.toSeq.foreach(l=>header=header +"," + l.toString )
@@ -341,7 +339,7 @@ object Helper {
     Logger.error("tetststtsts " + request.csvEncoding)
     val fileName: String = request.tag + "_" + new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss").format(Calendar.getInstance().getTime()) + ".csv"
     val contentDisposition: String = "attachment; filename=" + fileName
-    (new String(Charset.forName(request.csvEncoding).encode(data).array(),Charset.forName(request.csvEncoding)),contentDisposition)
+    (data.getBytes(Charset.forName(request.csvEncoding)),contentDisposition)
   }
 
 

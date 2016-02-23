@@ -15,7 +15,7 @@ trait TranslationManage  {
   def getIfExist(key: String, languages: Option[Seq[String]]): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
   def updateMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Either[MessageConstant.MessageConstant, ShortError]]
   def createMessageConstant(messageConstant: MessageConstant.MessageConstant): Future[Either[MessageConstant.MessageConstant, ShortError]]
-  def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Option[Error.ShortError]]
+  def createMessageConstants(messageConstants: Seq[MessageConstant.MessageConstant]): Future[Either[Seq[MessageConstant.MessageConstant],Error.ShortError]]
   def deleteMessageConstant(key: String):Future[Option[ShortError]]
   def getIfExistWithKey(key: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]
   def getIfExistWithTag(key: String): Future[Either[Seq[MessageConstant.MessageConstant], ShortError]]

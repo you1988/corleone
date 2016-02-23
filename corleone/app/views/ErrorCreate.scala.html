@@ -1,0 +1,13 @@
+@* Error Template File *@
+@(error: String,messages : Seq[String])
+
+<div class="alert alert-danger" role="alert">
+    <div>
+        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+        <span class="sr-only">Error:</span> @error
+        <ul>
+            @messages.map{ message =><li>@message</li>
+            }
+        </ul>
+    </div>
+</div>

@@ -100,10 +100,10 @@ class TranslationService @Inject()(translationManager: TranslationManage) extend
           translationManager.createMessageConstants(messageConstants).map { error =>
             error match {
               // case message Constant created succeeded return 201 http response.
-              case None => handleSuccess(request, messageConstants)
+              case Left(seq) => handleSuccess(request, messageConstants)
               //possible errors: database is down or an unexpected error or already a message constant exist with the specified key.
               //in this case send 503 or 500 or 409 http response
-              case Some(er) => handleFailure(request, Right(er))
+              case Right(er) => handleFailure(request, Right(er))
             }
           }
         }
