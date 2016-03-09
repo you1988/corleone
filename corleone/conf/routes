@@ -1,0 +1,37 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET        /                       @controllers.Application.index()
+GET        /heartbeat              @controllers.HealthCheckController.heartbeat
+
+
+GET        /oauth-callback         controllers.OAuth2Controller.callback
+
+#Corleone service 
+GET     /api/translations               @controllers.TranslationService.getTranslaions(languageCodes:Option[Seq[String]],tags:Option[Seq[String]],limit:Option[Integer] ?= Some(1000),after:Option[String],before:Option[String])
+POST    /api/translations               @controllers.TranslationService.createTranslaions()
+GET     /api/translations/:key          @controllers.TranslationService.getTranslation(key:String,languageCodes:Option[Seq[String]])
+DELETE  /api/translations/:key          @controllers.TranslationService.deleteTranslation(key:String)
+PATCH   /api/translations/:key          @controllers.TranslationService.patchTranslation(key:String)
+PUT     /api/translations/:key          @controllers.TranslationService.putTranslation(key:String)
+
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+GET     /webjars/*file              controllers.WebJarAssets.at(file)
+
+# Translation management Api
+POST    /create-translation          @controllers.Application.createTranslation()
+POST    /search-translation          @controllers.Application.search()
+POST    /create-form-translation     @controllers.Application.createForm()
+POST    /update-translation-form     @controllers.Application.updateForm()
+POST    /update-translation          @controllers.Application.updateTranslation()
+POST    /delete-translation          @controllers.Application.deleteTranslation()
+POST    /export-form-translation     @controllers.Application.exportForm()
+POST    /export-translation          @controllers.Application.exportTranslation()
+POST    /import-form-translation     @controllers.Application.importForm()
+POST    /import-translation          @controllers.Application.importTranslation()
+POST    /create-translation-props    @controllers.Application.createTranslationsBasedOnProps()
+

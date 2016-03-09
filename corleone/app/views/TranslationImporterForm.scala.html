@@ -1,0 +1,75 @@
+@(languages: Seq[String] )
+<div class="col-md-3 aside"></div>
+<div class="col-md-6 padding-zero">
+	<div>
+
+	<form action="import-translation" data-toggle="validator"  id="importForm" enctype="multipart/form-data" method="POST">
+
+		<div class="row creation-component-zero">
+			<div class="col-md-2 creation-label-zero">
+				<label class="control-label creation-control-label">language :</label>
+			</div>
+			<div class="col-md-10 creation-input-div-zero">
+					<select id="select_0" class="select_language">
+						<option value=""></option> @languages.map{ language =>
+						<option value="@language">@language</option> }
+					</select>
+				<input
+						id="language_value_0"  type="hidden" name="language"
+						> </input>
+			</div>
+		</div>
+		<div class="row creation-component-zero">
+			<div class="col-md-2 creation-label-zero">
+				<label class="control-label creation-control-label">CSV type :</label>
+			</div>
+
+			<div class="col-md-10 creation-input-div-zero">
+			<select id="select_csv_type" >
+				<option value=""></option>
+				<option value="ISO-8859-1">Microsoft CSV</option>
+				<option value="UTF-8">Google CSV</option>
+			</select>
+
+			<input
+					id="csv_type_value_0"  type="hidden" name="csv_type" value=""
+					> </input>
+		</div>
+		</div>
+
+
+		<div class="row creation-component-zero">
+			<div class="col-md-2 creation-label-zero">
+				<label class="control-label creation-control-label">File :</label>
+			</div>
+			<div class="col-md-10 creation-input-div-zero">
+				<div class="col-md-11 creation-input-div-zero">
+				    <input id="uploadFile" placeholder="Choose File"  class="form-control creation-input-zero" disabled="disabled" />
+                </div>
+				<div class="col-md-1 creation-input-div-zero fileUpload btn btn-default create-button">
+					<span  class="glyphicon glyphicon-open" aria-hidden="true"></span>
+					<input id="csv_file"  type="file" name="csv" class="upload"> </input>
+				</div>
+			</div>
+		</div>
+
+
+		<div class="row create-div-top">
+			<div class="col-md-12">
+				<button id="translation_reset_button"  type="reset"
+					class="btn btn-default create-button">
+					<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+				</button>
+				<button id="translation_export_button" type="submit"
+					class="btn btn-default create-button" >
+					<span class="glyphicon glyphicon-upload" aria-hidden="true"></span>
+				</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+
+</div>
+
+<div class="col-md-3 aside"></div>
