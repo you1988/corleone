@@ -1,6 +1,6 @@
 # Corleone
 
-*it gives you translations… and maybe someday you have opportunity to repay us the favour, capisce?*
+*it gives you translations… and maybe someday you have opportunity to repay us the favor, capisce?*
 
 Corleone Translation Service provides an internationalization solution for the application in Smart Logistics. It is
 implemented with the current stack:
@@ -106,5 +106,4 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
 
