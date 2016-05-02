@@ -2,7 +2,7 @@
 
 *it gives you translations… and maybe someday you have opportunity to repay us the favor, capisce?*
 
-Corleone Translation Service provides an internationalization solution for the application in Smart Logistics. It is
+Corleone is a translation service that provides an internationalization solution for the application in Smart Logistics. It is
 implemented with the current stack:
 - [play-scala 2.4.0](https://www.playframework.com/).
 - [Scala 2.11.6](http://www.scala-lang.org/)
@@ -13,7 +13,7 @@ implemented with the current stack:
 
 Corleone is hosted in [AWS](http://aws.amazon.com/).
 
-## Architechture
+## Architecture
 
 Corleone is an application build using Play Framework Architecture. It provides a frontend as well as a [REST api]
 (https://stash.zalando.net/users/bfriedrich/repos/translation-service-api/browse/translation-service-api.yml?at=refs%2Fheads%2Fapi-definition)
