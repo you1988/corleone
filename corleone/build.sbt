@@ -64,7 +64,7 @@ maintainer := "Team WHIP <team-whip@zalando.de>"
 
 // use the Zalando base image
 // see https://registry.hub.docker.com/u/zalando/openjdk/tags/manage/
-dockerBaseImage := "zalando/openjdk:8u40-b09-4"
+dockerBaseImage := "registry.opensource.zalan.do/stups/openjdk:8-28"
 
 // exposing the play ports
 dockerExposedPorts := Seq(9000, 9443)
@@ -96,17 +96,3 @@ dockerCommands += Cmd("ENTRYPOINT", "bin/corleone")
 dockerCommands += Cmd("CMD", "")
 
 
-// Flyway magic
-Seq(flywaySettings: _*)
-
-flywayUrl  := "jdbc:postgresql://localhost:5432/translation_service_db"
-
-flywayUser := "postgres"
-
-flywayPassword := "postgres"
-
-flywaySchemas := Seq("ts_data")
-
-flywayTable := "ts_data_history"
-
-flywayLocations := Seq("filesystem:conf/db/db_diff")
