@@ -84,7 +84,7 @@ class OAuth2Filter @Inject()(oauth2: OAuth2Helper) extends Filter {
       // more scopes to an user
       val realmOption = (response.json \ "realm").asOpt[String]
       realmOption match {
-        case Some(realm) => realm == "employees"
+        case Some(realm) => realm.matches( """[/]?employees""")
         case _ => false
       }
     }
